@@ -1,1 +1,38 @@
+Rank,State / Union Territory ,Region,Price/sqft (?),Median House Price (? Lakh) -2024,Median House Price (? Lakh) -2025,Median House Price (? Cr),Median House Price (USD),Lot Area Proxy (sqm),Living Area (sqft) – 2BHK,Avg Bedrooms,Avg Bathrooms,Avg House Age (Years),Overall Quality (1-10),Median Household Income (? Lakh/yr),Price-to-Income Ratio,Proximity Category,Market Tier
+1,Maharashtra,West,25000,230.0805,242.19,2.4219,"$290,048 ",90,968,3,2,22,9,8,30.27375,NEAR METRO,Tier 1 – Premium
+2,Delhi (NCR),North,18000,155.2071,174.39,1.7439,"$208,850 ",90,968,3,2,18,9,10,17.439,NEAR METRO,Tier 1 – Premium
+3,Karnataka,South,13000,108.3514,125.99,1.2599,"$150,886 ",90,968,3,2,12,8,9,13.99888889,NEAR METRO,Tier 1 – Premium
+4,Haryana,North,10000,89.1296,96.88,0.9688,"$116,024 ",90,968,3,2,15,8,8.5,11.39764706,NEAR METRO,Tier 1 – Premium
+5,Telangana,South,7500,65.394,72.66,0.7266,"$87,018 ",90,968,3,2,14,7,7.5,9.688,NEAR METRO,Tier 2 – Growth
+6,Tamil Nadu,South,7000,63.0726,67.82,0.6782,"$81,222 ",90,968,3,2,20,7,7,9.688571429,NEAR METRO,Tier 2 – Growth
+7,Uttar Pradesh,North,6500,58.87695,62.97,0.6297,"$75,413 ",100,968,3,2,25,6,5.5,11.44909091,INLAND,Tier 2 – Growth
+8,Chandigarh (UT),North,5500,50.616,53.28,0.5328,"$63,808 ",90,968,3,2,16,7,8,6.66,INLAND,Tier 2 – Growth
+9,Rajasthan,North-West,5500,50.8824,53.28,0.5328,"$63,808 ",100,968,3,2,28,6,5,10.656,INLAND,Tier 2 – Growth
+10,Punjab,North-West,5200,48.3648,50.38,0.5038,"$60,335 ",95,968,3,2,30,6,6.5,7.750769231,INLAND,Tier 2 – Growth
+11,West Bengal,East,4800,44.64,46.5,0.465,"$55,689 ",90,968,3,2,35,6,5,9.3,NEAR BAY,Tier 2 – Growth
+12,Kerala,South,4800,44.175,46.5,0.465,"$55,689 ",90,968,3,2,28,7,6,7.75,NEAR OCEAN,Tier 2 – Growth
+13,Gujarat,West,4750,43.4889,46.02,0.4602,"$55,114 ",100,968,3,2,20,7,7,6.574285714,NEAR OCEAN,Tier 2 – Growth
+14,Andhra Pradesh,South,4500,41.42,43.6,0.436,"$52,216 ",95,968,3,2,22,6,6,7.266666667,NEAR OCEAN,Tier 2 – Growth
+15,Madhya Pradesh,Central,4000,37.2,38.75,0.3875,"$46,407 ",100,968,3,2,30,5,4.5,8.611111111,INLAND,Tier 3 – Emerging
+16,Bihar,East,3500,32.8927,33.91,0.3391,"$40,611 ",100,968,3,2,40,5,3.2,10.596875,INLAND,Tier 3 – Emerging
+17,Odisha,East,3200,29.915,31,0.31,"$37,126 ",100,968,3,2,35,5,3.5,8.857142857,NEAR OCEAN,Tier 3 – Emerging
+18,Jharkhand,East,3000,28.1882,29.06,0.2906,"$34,802 ",105,968,3,2,38,4,3.4,8.547058824,INLAND,Tier 3 – Emerging
+19,Chhattisgarh,Central,2800,26.3161,27.13,0.2713,"$32,491 ",105,968,3,2,32,4,3.2,8.478125,INLAND,Tier 3 – Emerging
+20,Assam,North-East,2500,23.6145,24.22,0.2422,"$29,006 ",110,968,3,2,30,4,3,8.073333333,INLAND,Tier 3 – Emerging
+21,Himachal Pradesh,North,2300,21.65616,22.28,0.2228,"$26,683 ",150,968,3,2,25,5,4.5,4.951111111,INLAND,Tier 3 – Emerging
+22,Uttarakhand,North,2200,20.77725,21.31,0.2131,"$25,521 ",140,968,3,2,22,5,4,5.3275,INLAND,Tier 3 – Emerging
+23,Jammu & Kashmir,North,2000,18.9924,19.38,0.1938,"$23,210 ",120,968,3,2,28,5,3.5,5.537142857,INLAND,Tier 3 – Emerging
+24,Goa,West,1800,16.6552,17.44,0.1744,"$20,886 ",90,968,3,2,20,6,5.5,3.170909091,NEAR OCEAN,Tier 3 – Emerging
+25,Tripura,North-East,1200,11.3974,11.63,0.1163,"$13,928 ",120,968,3,2,35,4,2.8,4.153571429,INLAND,Tier 4 – Affordable
+26,Nagaland,North-East,1100,10.49025,10.65,0.1065,"$12,754 ",130,968,3,2,30,4,2.5,4.26,INLAND,Tier 4 – Affordable
+27,Manipur,North-East,1100,10.49025,10.65,0.1065,"$12,754 ",125,968,3,2,30,4,2.5,4.26,INLAND,Tier 4 – Affordable
+28,Meghalaya,North-East,1000,9.51558,9.69,0.0969,"$11,605 ",130,968,3,2,28,4,2.8,3.460714286,INLAND,Tier 4 – Affordable
+29,Arunachal Pradesh,North-East,1000,9.54465,9.69,0.0969,"$11,605 ",200,968,3,2,25,4,2.5,3.876,INLAND,Tier 4 – Affordable
+30,Mizoram,North-East,800,7.63375,7.75,0.0775,"$9,281 ",140,968,3,2,28,4,2.5,3.1,INLAND,Tier 4 – Affordable
+31,Sikkim,North-East,800,7.6105,7.75,0.0775,"$9,281 ",180,968,3,2,22,5,3,2.583333333,INLAND,Tier 4 – Affordable
+32,Puducherry (UT),South,700,6.6105,6.78,0.0678,"$8,120 ",90,968,3,2,30,5,3.5,1.937142857,NEAR OCEAN,Tier 4 – Affordable
+33,Andaman & Nicobar,Island,500,4.7916,4.84,0.0484,"$5,796 ",200,968,2,1,25,5,2,2.42,ISLAND,Tier 4 – Affordable
+34,DNH & DD (UT),West,500,4.7674,4.84,0.0484,"$5,796 ",90,968,2,1,20,4,3,1.613333333,NEAR OCEAN,Tier 4 – Affordable
+35,Ladakh (UT),North,400,3.8412,3.88,0.0388,"$4,647 ",250,968,2,1,20,4,1.8,2.155555556,INLAND,Tier 4 – Affordable
+36,Lakshadweep (UT),Island,400,3.8412,3.88,0.0388,"$4,647 ",200,968,2,1,18,4,1.5,2.586666667,ISLAND,Tier 4 – Affordable
 
