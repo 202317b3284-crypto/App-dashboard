@@ -33,14 +33,14 @@ region_filter = st.sidebar.multiselect(
 )
 
 state_filter = st.sidebar.multiselect(
-    "Select State/UnionTerritory",
-    options=sorted(df["State/UnionTerritory"].unique()),
-    default=sorted(df["State/UnionTerritory"].unique())
+    "Select State",
+    options=sorted(df["State"].unique()),
+    default=sorted(df["State"].unique())
 )
 
 filtered_df = df[
     (df["Region"].isin(region_filter)) &
-    (df["State/UnionTerritory"].isin(state_filter))
+    (df["State"].isin(state_filter))
 ]
 
 # --------------------------------
@@ -78,11 +78,11 @@ st.subheader("📊 Median House Price Comparison (2024 vs 2025)")
 
 chart_df = filtered_df[
     [
-        "State/UnionTerritory",
+        "State",
         "Median House Price (₹ Lakh) - 2024",
         "Median House Price (₹ Lakh) - 2025"
     ]
-].set_index("State/UnionTerritory")
+].set_index("State")
 
 st.bar_chart(chart_df)
 
