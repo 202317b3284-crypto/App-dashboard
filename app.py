@@ -13,7 +13,7 @@ st.title("🏠 Indian Real Estate Market Dashboard")
 st.write("State and region-wise housing price analysis (2024–2025)")
 
 # --------------------------------
-# Load Data from GitHub Repository
+# Load CSV from GitHub Repository Root
 # --------------------------------
 @st.cache_data
 def load_data():
@@ -28,14 +28,14 @@ st.sidebar.header("🔍 Filter Options")
 
 region_filter = st.sidebar.multiselect(
     "Select Region",
-    options=df["Region"].unique(),
-    default=df["Region"].unique()
+    options=sorted(df["Region"].unique()),
+    default=sorted(df["Region"].unique())
 )
 
 state_filter = st.sidebar.multiselect(
     "Select State / Union Territory",
-    options=df["State / Union Territory"].unique(),
-    default=df["State / Union Territory"].unique()
+    options=sorted(df["State / Union Territory"].unique()),
+    default=sorted(df["State / Union Territory"].unique())
 )
 
 filtered_df = df[
@@ -72,14 +72,16 @@ col3.metric(
 )
 
 # --------------------------------
-# Price Comparison Chart (Streamlit Native)
+# Price Comparison Chart (Native Streamlit)
 # --------------------------------
 st.subheader("📊 Median House Price Comparison (2024 vs 2025)")
 
 chart_df = filtered_df[
-    ["State / Union Territory",
-     "Median House Price (₹ Lakh) - 2024",
-     "Median House Price (₹ Lakh) - 2025"]
+    [
+        "State / Union Territory",
+        "Median House Price (₹ Lakh) - 2024",
+        "Median House Price (₹ Lakh) - 2025"
+    ]
 ].set_index("State / Union Territory")
 
 st.bar_chart(chart_df)
@@ -88,7 +90,4 @@ st.bar_chart(chart_df)
 # Footer
 # --------------------------------
 st.markdown("---")
-st.caption(
-    "Built using Python, Streamlit & GitHub | Real Estate What‑If Market Analyzer"
-)
-
+st.caption("Built using Python, Streamlit & GitHub | Real Estate What‑If Market Analyzer")
