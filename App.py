@@ -1,7 +1,5 @@
-# App-dashboard
 import streamlit as st
 import pandas as pd
-import matplotlib as plt
 
 # --------------------------------
 # Page Configuration
@@ -12,7 +10,7 @@ st.set_page_config(
 )
 
 st.title("🏠 Indian Real Estate Market Dashboard")
-st.write("State & region-wise housing price insights (2024–2025)")
+st.write("State and region-wise housing price analysis (2024–2025)")
 
 # --------------------------------
 # Load Data from GitHub Repository
@@ -26,30 +24,30 @@ df = load_data()
 # --------------------------------
 # Sidebar Filters
 # --------------------------------
-st.sidebar.header("🔎 Filters")
+st.sidebar.header("🔍 Filter Options")
 
-region_selected = st.sidebar.multiselect(
+region_filter = st.sidebar.multiselect(
     "Select Region",
     options=df["Region"].unique(),
     default=df["Region"].unique()
 )
 
-state_selected = st.sidebar.multiselect(
-    "Select State / UT",
+state_filter = st.sidebar.multiselect(
+    "Select State / Union Territory",
     options=df["State / Union Territory"].unique(),
     default=df["State / Union Territory"].unique()
 )
 
 filtered_df = df[
-    (df["Region"].isin(region_selected)) &
-    (df["State / Union Territory"].isin(state_selected))
+    (df["Region"].isin(region_filter)) &
+    (df["State / Union Territory"].isin(state_filter))
 ]
 
 # --------------------------------
 # Dataset Preview
 # --------------------------------
 st.subheader("📋 Dataset Preview")
-st.dataframe(filtered_df)
+st.dataframe(filtered_df, use_container_width=True)
 
 # --------------------------------
 # Key Metrics
@@ -74,39 +72,23 @@ col3.metric(
 )
 
 # --------------------------------
-# Visualization: Price Comparison
+# Price Comparison Chart (Streamlit Native)
 # --------------------------------
 st.subheader("📊 Median House Price Comparison (2024 vs 2025)")
 
-fig, ax = plt.subplots(figsize=(10, 5))
+chart_df = filtered_df[
+    ["State / Union Territory",
+     "Median House Price (₹ Lakh) - 2024",
+     "Median House Price (₹ Lakh) - 2025"]
+].set_index("State / Union Territory")
 
-ax.bar(
-    filtered_df["State / Union Territory"],
-    filtered_df["Median House Price (₹ Lakh) - 2024"],
-    label="2024",
-    alpha=0.7
-)
-
-ax.bar(
-    filtered_df["State / Union Territory"],
-    filtered_df["Median House Price (₹ Lakh) - 2025"],
-    label="2025",
-    alpha=0.7
-)
-
-ax.set_xticklabels(
-    filtered_df["State / Union Territory"],
-    rotation=45,
-    ha="right"
-)
-
-ax.set_ylabel("Median House Price (₹ Lakh)")
-ax.legend()
-
-st.pyplot(fig)
+st.bar_chart(chart_df)
 
 # --------------------------------
 # Footer
 # --------------------------------
 st.markdown("---")
-st.caption("Built using Python, Streamlit & GitHub | Real Estate What‑If Market Analyzer")
+st.caption(
+    "Built using Python, Streamlit & GitHub | Real Estate What‑If Market Analyzer"
+)
+``
