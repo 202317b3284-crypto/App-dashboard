@@ -1,4 +1,4 @@
-Rank,State / Union Territory ,Region,Price/sqft (?),Median House Price (? Lakh) -2024,Median House Price (? Lakh) -2025,Median House Price (? Cr),Median House Price (USD),Lot Area Proxy (sqm),Living Area (sqft) – 2BHK,Avg Bedrooms,Avg Bathrooms,Avg House Age (Years),Overall Quality (1-10),Median Household Income (? Lakh/yr),Price-to-Income Ratio,Proximity Category,Market Tier
+Rank,State/UnionTerritory,Region,Price/sqft (?),Median House Price (? Lakh) -2024,Median House Price (? Lakh) -2025,Median House Price (? Cr),Median House Price (USD),Lot Area Proxy (sqm),Living Area (sqft) – 2BHK,Avg Bedrooms,Avg Bathrooms,Avg House Age (Years),Overall Quality (1-10),Median Household Income (? Lakh/yr),Price-to-Income Ratio,Proximity Category,Market Tier
 1,Maharashtra,West,25000,230.0805,242.19,2.4219,"$290,048 ",90,968,3,2,22,9,8,30.27375,NEAR METRO,Tier 1 – Premium
 2,Delhi (NCR),North,18000,155.2071,174.39,1.7439,"$208,850 ",90,968,3,2,18,9,10,17.439,NEAR METRO,Tier 1 – Premium
 3,Karnataka,South,13000,108.3514,125.99,1.2599,"$150,886 ",90,968,3,2,12,8,9,13.99888889,NEAR METRO,Tier 1 – Premium
