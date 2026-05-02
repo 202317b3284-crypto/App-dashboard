@@ -1,4 +1,4 @@
-State/ UT,City,Locality,Property Type,Built-up Area (sqft),Price per Sqft (INR)S,Bedrooms (BHK),Bathrooms,Property Age (Years),Facing,Furnishing Status,Car Parking,Distance to Metro (km),Distance to IT Hub (km),Nearby Schools (count),Nearby Hospitals (count),Monthly Maintenance (INR),Rental Yield (%),Estimated Sale Price (INR),Buyer Attraction Score (1-10)
+State,City,Locality,Property Type,Built-up Area (sqft),Price per Sqft (INR)S,Bedrooms (BHK),Bathrooms,Property Age (Years),Facing,Furnishing Status,Car Parking,Distance to Metro (km),Distance to IT Hub (km),Nearby Schools (count),Nearby Hospitals (count),Monthly Maintenance (INR),Rental Yield (%),Estimated Sale Price (INR),Buyer Attraction Score (1-10)
 Telangana,Hyderabad,Banjara Hills,Independent House,1283,"? 7,461",3,3,2,North,Fully Furnished,No,3.9,1,5,1,"? 6,326",4.77,"? 9,572,463",10
 Telangana,Hyderabad,Kondapur,Independent House,1263,"? 9,473",3,1,17,West,Unfurnished,No,4.6,2.4,6,1,"? 7,835",5.58,"? 11,964,399",10
 Telangana,Hyderabad,Nizampet,Independent House,2598,"? 8,933",3,2,18,West,Unfurnished,Yes,0.7,9,5,4,"? 2,540",4.17,"? 23,207,934",10
