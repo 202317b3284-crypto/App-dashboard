@@ -71,7 +71,7 @@ if "selected_city" not in st.session_state:
 # INDIA VIEW
 # -------------------------------------------------
 def show_india_view():
-    st.title("🇮🇳 Indian Real Estate Market Overview")
+    st.title("🏘️💹 Indian Real Estate Market Overview")
 
     if "region" in india_df.columns:
         region = st.selectbox(
