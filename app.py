@@ -1,129 +1,145 @@
 import streamlit as st
 import pandas as pd
 
-# --------------------------------
-# Page Config
-# --------------------------------
-st.set_page_config(
-    page_title="Indian Real Estate Market Dashboard",
-    layout="wide"
-)
+# -------------------------------------------------
+# Page Configuration
+# -------------------------------------------------
+st.set_page_config(page_title="Real Estate Market Analyzer", layout="wide")
 
-st.title("🏠 Indian Real Estate Market Dashboard")
-st.write("State and region-wise housing price analysis (2024–2025)")
-
-# --------------------------------
-# Load and Clean CSV
-# --------------------------------
+# -------------------------------------------------
+# Load Data
+# -------------------------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Real_estate_data.csv")
+    india_df = pd.read_csv("india_state_data.csv")
+    city_df = pd.read_csv("city_level_data.csv")
 
-    # ✅ Standardize column names (CRITICAL)
-    df.columns = [
-        "rank",
-        "state",
-        "region",
-        "price_per_sqft",
-        "median_price_2024_lakh",
-        "median_price_2025_lakh",
-        "median_price_cr",
-        "median_price_usd",
-        "lot_area_sqm",
-        "living_area_sqft",
-        "avg_bedrooms",
-        "avg_bathrooms",
-        "avg_house_age",
-        "overall_quality",
-        "median_income_lakh",
-        "price_to_income_ratio",
-        "proximity",
-        "market_tier"
-    ]
+    # Clean column names
+    india_df.columns = india_df.columns.str.strip()
+    city_df.columns = city_df.columns.str.strip()
 
-    return df
+    return india_df, city_df
 
-df = load_data()
+india_df, city_df = load_data()
 
-# --------------------------------
-# Sidebar Filters
-# --------------------------------
-st.sidebar.header("🔍 Filter Options")
+# -------------------------------------------------
+# Session State Initialization
+# -------------------------------------------------
+if "view" not in st.session_state:
+    st.session_state.view = "INDIA"
 
-region_filter = st.sidebar.multiselect(
-    "Select Region",
-    options=sorted(df["region"].unique()),
-    default=sorted(df["region"].unique())
-)
+if "selected_state" not in st.session_state:
+    st.session_state.selected_state = None
 
-tier_filter = st.sidebar.multiselect(
-    "Select Market Tier",
-    options=sorted(df["market_tier"].unique()),
-    default=sorted(df["market_tier"].unique())
-)
+if "selected_city" not in st.session_state:
+    st.session_state.selected_city = None
 
-filtered_df = df[
-    (df["region"].isin(region_filter)) &
-    (df["market_tier"].isin(tier_filter))
-]
+# -------------------------------------------------
+# INDIA LEVEL VIEW (Person 1 scope)
+# -------------------------------------------------
+def show_india_view():
+    st.title("🇮🇳 Indian Real Estate Market Overview")
 
-# --------------------------------
-# Dataset Preview
-# --------------------------------
-st.subheader("📋 Dataset Preview")
-st.dataframe(filtered_df, use_container_width=True)
+    # Filters
+    region = st.selectbox(
+        "Select Region",
+        ["All"] + sorted(india_df["Region"].unique().tolist())
+    )
 
-# --------------------------------
-# Key Metrics
-# --------------------------------
-st.subheader("📌 Key Metrics")
+    tier = st.selectbox(
+        "Select Market Tier",
+        ["All"] + sorted(india_df["Market Tier"].unique().tolist())
+    )
 
-col1, col2, col3 = st.columns(3)
+    filtered_df = india_df.copy()
 
-col1.metric(
-    "Avg Price / Sqft",
-    f"₹ {int(filtered_df['price_per_sqft'].mean()):,}"
-)
+    if region != "All":
+        filtered_df = filtered_df[filtered_df["Region"] == region]
 
-col2.metric(
-    "Median Price 2024 (₹ Lakh)",
-    round(filtered_df["median_price_2024_lakh"].mean(), 2)
-)
+    if tier != "All":
+        filtered_df = filtered_df[filtered_df["Market Tier"] == tier]
 
-col3.metric(
-    "Median Price 2025 (₹ Lakh)",
-    round(filtered_df["median_price_2025_lakh"].mean(), 2)
-)
+    st.subheader("State-wise Market Data")
+    st.dataframe(filtered_df, use_container_width=True)
 
-# --------------------------------
-# Growth Calculation
-# --------------------------------
-filtered_df["growth_lakh"] = (
-    filtered_df["median_price_2025_lakh"]
-    - filtered_df["median_price_2024_lakh"]
-)
+    selected_state = st.selectbox(
+        "Select a State to view details",
+        filtered_df["State / Union Territory"].unique()
+    )
 
-# --------------------------------
-# Price Comparison Chart
-# --------------------------------
-st.subheader("📊 Median House Price Comparison")
+    if st.button("View State Details"):
+        st.session_state.selected_state = selected_state
+        st.session_state.view = "STATE"
 
-chart_df = filtered_df[
-    ["state", "median_price_2024_lakh", "median_price_2025_lakh"]
-].set_index("state")
+# -------------------------------------------------
+# STATE LEVEL DETAIL VIEW (Person 2 scope)
+# -------------------------------------------------
+def show_state_view():
+    state = st.session_state.selected_state
+    st.title(f"📍 State Market Details – {state}")
 
-st.bar_chart(chart_df)
+    state_df = india_df[india_df["State / Union Territory"] == state]
+    st.dataframe(state_df, use_container_width=True)
 
-# --------------------------------
-# Growth Chart
-# --------------------------------
-st.subheader("📈 Price Growth (2024 → 2025)")
+    # Cities under the state
+    cities = city_df[city_df["City"].notnull()]["City"].unique().tolist()
 
-growth_chart = filtered_df[["state", "growth_lakh"]].set_index("state")
-st.bar_chart(growth_chart)
+    selected_city = st.selectbox("Select a City for Deep‑Dive", cities)
 
-# --------------------------------
-# Footer
-# --------------------------------
-st.markdown("---")
-st.caption("Built using Python, Streamlit & GitHub | Real Estate What‑If Market Analyzer")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        if st.button("← Back to India Overview"):
+            st.session_state.view = "INDIA"
+            st.session_state.selected_state = None
+
+    with col2:
+        if st.button("View City Deep‑Dive →"):
+            st.session_state.selected_city = selected_city
+            st.session_state.view = "CITY"
+
+# -------------------------------------------------
+# CITY DEEP-DIVE + STATE COMPARISON (Person 3 & 4 scope)
+# -------------------------------------------------
+def show_city_view():
+    city = st.session_state.selected_city
+    state = st.session_state.selected_state
+
+    st.title(f"🏙️ City Deep‑Dive – {city}")
+    st.caption(f"Benchmarking against {state}")
+
+    city_data = city_df[city_df["City"] == city]
+    state_data = india_df[india_df["State / Union Territory"] == state]
+
+    col1, col2 = st.columns([3, 1])
+
+    with col1:
+        st.subheader("City‑Level Details")
+        st.dataframe(city_data, use_container_width=True)
+
+    with col2:
+        st.subheader("State Benchmark")
+        st.metric(
+            "State Avg Price / Sqft",
+            f"₹ {int(state_data['Price/sqft (₹)'].values[0]):,}"
+        )
+        st.metric(
+            "State Median Price 2025",
+            f"₹ {round(state_data['Median House Price (₹ Lakh) -2025'].values[0], 2)} L"
+        )
+
+    if st.button("← Back to State View"):
+        st.session_state.view = "STATE"
+        st.session_state.selected_city = None
+
+# -------------------------------------------------
+# VIEW CONTROLLER
+# -------------------------------------------------
+if st.session_state.view == "INDIA":
+    show_india_view()
+
+elif st.session_state.view == "STATE":
+    show_state_view()
+
+elif st.session_state.view == "CITY":
+    show_city_view()
