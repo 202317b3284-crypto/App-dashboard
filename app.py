@@ -1,15 +1,17 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Real Estate Dashboard", layout="wide")
+# -------------------------------------------------
+# Page Configuration
+# -------------------------------------------------
+st.set_page_config(page_title="Real Estate Market Analyzer", layout="wide")
 
-# ------------------------------------------
+# -------------------------------------------------
 # Helper: Normalize column names
-# ------------------------------------------
+# -------------------------------------------------
 def normalize_columns(df):
     df.columns = (
-        df.columns
-        .str.strip()
+        df.columns.str.strip()
         .str.lower()
         .str.replace(" ", "_")
         .str.replace("/", "_")
@@ -18,150 +20,169 @@ def normalize_columns(df):
     )
     return df
 
-# ------------------------------------------
-# Load datasets
-# ------------------------------------------
+# -------------------------------------------------
+# Load Data
+# -------------------------------------------------
 @st.cache_data
 def load_data():
-    india = pd.read_csv("india_state_data.csv")
-    city = pd.read_csv("city_level_data.csv")
+    india_df = pd.read_csv("india_state_data.csv")
+    city_df = pd.read_csv("city_level_data.csv")
 
-    india = normalize_columns(india)
-    city = normalize_columns(city)
+    india_df = normalize_columns(india_df)
+    city_df = normalize_columns(city_df)
 
-    return india, city
+    return india_df, city_df
 
 india_df, city_df = load_data()
 
-# ------------------------------------------
-# Standardize key column names
-# ------------------------------------------
-# India dataset
-COLUMN_MAP_INDIA = {
-    "state": "state",
-    "region": "region",
-    "market_tier": "market_tier",
-    "price_sqft_₹": "price_sqft",
-    "price_sqft": "price_sqft",
-    "median_house_price_₹_lakh_-2025": "median_price_2025"
-}
-
-for col in COLUMN_MAP_INDIA:
-    if col in india_df.columns:
-        india_df.rename(columns={col: COLUMN_MAP_INDIA[col]}, inplace=True)
-
-# City dataset
-if "city" not in city_df.columns:
-    st.error("City column not found in city-level dataset.")
+# -------------------------------------------------
+# Required columns check
+# -------------------------------------------------
+required_city_cols = {"state", "city"}
+if not required_city_cols.issubset(city_df.columns):
+    st.error("city_level_data.csv must contain both 'state' and 'city' columns.")
     st.stop()
 
-# ------------------------------------------
-# Session state
-# ------------------------------------------
+# -------------------------------------------------
+# Session State Initialization
+# -------------------------------------------------
 if "view" not in st.session_state:
     st.session_state.view = "INDIA"
-if "state" not in st.session_state:
-    st.session_state.state = None
-if "city" not in st.session_state:
-    st.session_state.city = None
 
-# ------------------------------------------
-# INDIA VIEW (Your responsibility)
-# ------------------------------------------
+if "selected_state" not in st.session_state:
+    st.session_state.selected_state = None
+
+if "selected_city" not in st.session_state:
+    st.session_state.selected_city = None
+
+# -------------------------------------------------
+# INDIA LEVEL VIEW (Person 1)
+# -------------------------------------------------
 def show_india_view():
-    st.title("🇮🇳 Indian Real Estate Overview")
+    st.title("🇮🇳 Indian Real Estate Market Overview")
 
-    # Filters
-    region = st.selectbox(
-        "Select Region",
-        ["All"] + sorted(india_df["region"].dropna().unique().tolist())
+    region_filter = (
+        ["All"] + sorted(india_df["region"].dropna().unique())
+        if "region" in india_df.columns else ["All"]
     )
 
-    tier = st.selectbox(
-        "Select Market Tier",
-        ["All"] + sorted(india_df["market_tier"].dropna().unique().tolist())
+    tier_filter = (
+        ["All"] + sorted(india_df["market_tier"].dropna().unique())
+        if "market_tier" in india_df.columns else ["All"]
     )
 
-    filtered = india_df.copy()
+    region = st.selectbox("Select Region", region_filter)
+    tier = st.selectbox("Select Market Tier", tier_filter)
 
-    if region != "All":
-        filtered = filtered[filtered["region"] == region]
+    filtered_df = india_df.copy()
 
-    if tier != "All":
-        filtered = filtered[filtered["market_tier"] == tier]
+    if region != "All" and "region" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["region"] == region]
 
-    st.subheader("State Level Market Data")
-    st.dataframe(filtered, use_container_width=True)
+    if tier != "All" and "market_tier" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["market_tier"] == tier]
+
+    st.subheader("State‑Level Market Data")
+    st.dataframe(filtered_df, use_container_width=True)
+
+    # ✅ States sourced from city-level dataset
+    available_states = sorted(city_df["state"].unique())
 
     selected_state = st.selectbox(
-        "Select a State",
-        filtered["state"].unique()
+        "Select a State to view details",
+        available_states
     )
 
     if st.button("View State Details"):
-        st.session_state.state = selected_state
+        st.session_state.selected_state = selected_state
         st.session_state.view = "STATE"
 
-# ------------------------------------------
-# STATE VIEW
-# ------------------------------------------
+# -------------------------------------------------
+# STATE LEVEL DETAIL VIEW (Person 2)
+# -------------------------------------------------
 def show_state_view():
-    st.title(f"📍 State Details – {st.session_state.state}")
+    state = st.session_state.selected_state
+    st.title(f"📍 State Market Details – {state}")
 
-    state_data = india_df[india_df["state"] == st.session_state.state]
-    st.dataframe(state_data, use_container_width=True)
+    # State benchmark from India dataset
+    state_benchmark = india_df[india_df["state"] == state]
 
-    cities = city_df["city"].unique().tolist()
-    selected_city = st.selectbox("Select City", cities)
+    if not state_benchmark.empty:
+        st.subheader("State‑Level Benchmark")
+        st.dataframe(state_benchmark, use_container_width=True)
+
+    # ✅ Cities come from city dataset based on selected state
+    state_cities = sorted(
+        city_df[city_df["state"] == state]["city"].unique()
+    )
+
+    selected_city = st.selectbox(
+        "Select a City for Deep‑Dive",
+        state_cities
+    )
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("← Back to India"):
+        if st.button("← Back to India Overview"):
             st.session_state.view = "INDIA"
+            st.session_state.selected_state = None
 
     with col2:
         if st.button("View City Deep‑Dive →"):
-            st.session_state.city = selected_city
+            st.session_state.selected_city = selected_city
             st.session_state.view = "CITY"
 
-# ------------------------------------------
-# CITY VIEW (City + State comparison)
-# ------------------------------------------
+# -------------------------------------------------
+# CITY LEVEL DEEP‑DIVE + STATE COMPARISON
+# -------------------------------------------------
 def show_city_view():
-    st.title(f"🏙️ City Deep‑Dive – {st.session_state.city}")
+    city = st.session_state.selected_city
+    state = st.session_state.selected_state
 
-    city_data = city_df[city_df["city"] == st.session_state.city]
-    state_data = india_df[india_df["state"] == st.session_state.state]
+    st.title(f"🏙️ City Deep‑Dive – {city}")
+    st.caption(f"Compared with {state} State Benchmarks")
+
+    city_data = city_df[
+        (city_df["city"] == city) &
+        (city_df["state"] == state)
+    ]
+
+    state_data = india_df[india_df["state"] == state]
 
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        st.subheader("City Level Details")
+        st.subheader("City‑Level Data")
         st.dataframe(city_data, use_container_width=True)
 
     with col2:
-        st.subheader("State Benchmark")
-        if not state_data.empty and "price_sqft" in state_data.columns:
-            st.metric(
-                "Avg Price / Sqft",
-                f"₹ {int(state_data['price_sqft'].iloc[0]):,}"
-            )
-        if "median_price_2025" in state_data.columns:
-            st.metric(
-                "Median Price 2025",
-                f"₹ {round(state_data['median_price_2025'].iloc[0], 2)} L"
-            )
+        st.subheader("State Benchmarks")
 
-    if st.button("← Back to State"):
+        if not state_data.empty:
+            if "price_sqft" in state_data.columns:
+                st.metric(
+                    "State Avg Price / Sqft",
+                    f"₹ {int(state_data['price_sqft'].iloc[0]):,}"
+                )
+            if "median_house_price_₹_lakh_-2025" in state_data.columns:
+                st.metric(
+                    "Median Price 2025",
+                    f"₹ {round(state_data['median_house_price_₹_lakh_-2025'].iloc[0],2)} L"
+                )
+
+    if st.button("← Back to State View"):
         st.session_state.view = "STATE"
+        st.session_state.selected_city = None
 
-# ------------------------------------------
+# -------------------------------------------------
 # App Controller
-# ------------------------------------------
+# -------------------------------------------------
 if st.session_state.view == "INDIA":
     show_india_view()
+
 elif st.session_state.view == "STATE":
     show_state_view()
+
 elif st.session_state.view == "CITY":
     show_city_view()
