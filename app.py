@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import altair as alt
 
 # -------------------------------------------------
 # Page Configuration
@@ -54,13 +55,11 @@ st.session_state.setdefault("selected_city", None)
 st.session_state.setdefault("selected_question", None)
 
 # -------------------------------------------------
-# INDIA VIEW (unchanged logic)
+# INDIA VIEW
 # -------------------------------------------------
 def show_india_view():
     st.title("🏘️💹 Indian Real Estate Market Overview")
-
-    filtered = india_df.copy()
-    st.dataframe(filtered, use_container_width=True)
+    st.dataframe(india_df, use_container_width=True)
 
     selected_state = st.selectbox("Select a State", sorted(city_df["state"].unique()))
     if st.button("View State Details"):
@@ -68,51 +67,73 @@ def show_india_view():
         st.session_state.view = "STATE"
 
 # -------------------------------------------------
-# STATE VIEW (UPDATED)
+# STATE VIEW (FIXED PIE CHARTS)
 # -------------------------------------------------
 def show_state_view():
     state = st.session_state.selected_state
     st.title(f"📍 State Market Details – {state}")
 
-    # -------------------------------
-    # Benchmark Table
-    # -------------------------------
     st.subheader("Benchmark Metrics")
     st.dataframe(india_df[india_df["state"] == state], use_container_width=True)
 
-    # Filter city data for state
     state_city_df = city_df[city_df["state"] == state]
 
-    # -------------------------------
-    # TWO PIE CHARTS
-    # -------------------------------
     st.subheader("📊 State-Level Market Distribution")
-
     col1, col2 = st.columns(2)
 
+    # -------------------------------
     # Pie 1: Property Type Distribution
+    # -------------------------------
     if "property_type" in state_city_df.columns:
+        prop_df = (
+            state_city_df["property_type"]
+            .value_counts()
+            .reset_index()
+            .rename(columns={"index": "Property Type", "property_type": "Count"})
+        )
+
+        pie1 = (
+            alt.Chart(prop_df)
+            .mark_arc()
+            .encode(
+                theta="Count:Q",
+                color="Property Type:N",
+                tooltip=["Property Type", "Count"]
+            )
+        )
+
         with col1:
             st.caption("Property Type Distribution")
-            prop_series = state_city_df["property_type"].value_counts()
-            st.pyplot(
-                prop_series.plot.pie(autopct="%1.1f%%", ylabel="").figure
-            )
+            st.altair_chart(pie1, use_container_width=True)
 
-    # Pie 2: Avg Price Contribution by City
+    # -------------------------------
+    # Pie 2: Avg Price by City
+    # -------------------------------
+    price_city_df = (
+        state_city_df
+        .groupby("city")["price_per_sqft"]
+        .mean()
+        .reset_index()
+    )
+
+    pie2 = (
+        alt.Chart(price_city_df)
+        .mark_arc()
+        .encode(
+            theta="price_per_sqft:Q",
+            color="city:N",
+            tooltip=["city", "price_per_sqft"]
+        )
+    )
+
     with col2:
         st.caption("Average Price Contribution by City")
-        price_city = (
-            state_city_df.groupby("city")["price_per_sqft"].mean()
-        )
-        st.pyplot(
-            price_city.plot.pie(autopct="%1.1f%%", ylabel="").figure
-        )
+        st.altair_chart(pie2, use_container_width=True)
 
     st.divider()
 
     # -------------------------------
-    # CITY-LEVEL DATA TABLE (Moved here)
+    # City-Level Data Table
     # -------------------------------
     st.subheader("🏙️ City-Level Market Data")
     st.dataframe(state_city_df, use_container_width=True)
@@ -120,7 +141,7 @@ def show_state_view():
     st.divider()
 
     # -------------------------------
-    # CHAT-STYLE QUESTION SELECTION
+    # Question Assistant
     # -------------------------------
     st.subheader("💬 Market Analysis Assistant")
 
@@ -137,48 +158,35 @@ def show_state_view():
         "What-if property attributes change in this city?"
     ]
 
-    st.write("🤖 **Assistant:** What would you like to explore next?")
-
-    selected_question = st.radio(
-        "Select a question to proceed:",
-        questions
-    )
-
+    st.write("🤖 Assistant: What would you like to explore next?")
+    selected_question = st.radio("Choose a question:", questions)
     st.session_state.selected_question = selected_question
 
-    # -------------------------------
-    # CITY SELECTION & NAVIGATION
-    # -------------------------------
-    selected_city = st.selectbox(
-        "Select City for Deep-Dive",
-        sorted(state_city_df["city"].unique())
-    )
+    selected_city = st.selectbox("Select City for Deep‑Dive", sorted(state_city_df["city"].unique()))
 
     colA, colB = st.columns(2)
     with colA:
         if st.button("← Back to India"):
             st.session_state.view = "INDIA"
-            st.session_state.selected_state = None
-
     with colB:
         if st.button("Proceed to City Comparison →"):
             st.session_state.selected_city = selected_city
             st.session_state.view = "CITY"
 
 # -------------------------------------------------
-# CITY VIEW (unchanged logic placeholder)
+# CITY VIEW
 # -------------------------------------------------
 def show_city_view():
     st.title(f"🏙️ City–State Comparison – {st.session_state.selected_city}")
     st.info(f"Selected Question: {st.session_state.selected_question}")
 
-    st.write("City vs State graphs and analytics will adapt based on the selected question.")
+    st.write("City vs State graphs will adapt based on the selected question.")
 
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
 
 # -------------------------------------------------
-# APP CONTROLLER
+# App Controller
 # -------------------------------------------------
 if st.session_state.view == "INDIA":
     show_india_view()
