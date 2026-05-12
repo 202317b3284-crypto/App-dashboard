@@ -159,99 +159,27 @@ def show_india_view():
 # -------------------------------------------------
 # STATE VIEW
 # -------------------------------------------------
+
 def show_state_view():
     state = st.session_state.selected_state
     st.title(f"📍 State Market Details – {state}")
 
-    # -------------------------------
-    # Benchmark Metrics
-    # -------------------------------
     st.subheader("Benchmark Metrics")
     st.dataframe(
         india_df[india_df.get("state", "") == state],
         use_container_width=True
     )
 
-    # Filter city-level data for selected state
+    # City-level data for state
     state_city_df = city_df[city_df["state"] == state]
 
-    # -------------------------------
-    # State-Level Market Distribution
-    # -------------------------------
-    st.subheader("📊 State-Level Market Distribution")
-
-    col1, col2 = st.columns(2)
-
-    # ---- Donut Chart 1: Property Type Distribution ----
-    with col1:
-        st.caption("Property Type Distribution")
-
-        if "property_type" in state_city_df.columns and not state_city_df.empty:
-            property_df = (
-                state_city_df["property_type"]
-                .value_counts()
-                .reset_index()
-                .rename(columns={"index": "Property Type", "property_type": "Count"})
-            )
-
-            if not property_df.empty:
-                pie1 = (
-                    alt.Chart(property_df)
-                    .mark_arc(innerRadius=60)
-                    .encode(
-                        theta="Count:Q",
-                        color=alt.Color("Property Type:N", legend=alt.Legend(title="Property Type")),
-                        tooltip=["Property Type:N", "Count:Q"]
-                    )
-                    .properties(width=300, height=300)
-                )
-                st.altair_chart(pie1)
-            else:
-                st.info("No property type data available.")
-        else:
-            st.info("Property type field not available in city dataset.")
-
-    # ---- Donut Chart 2: Avg Price Contribution by City ----
-    with col2:
-        st.caption("Average Price Contribution by City")
-
-        if "price_per_sqft" in state_city_df.columns and not state_city_df.empty:
-            price_city_df = (
-                state_city_df
-                .groupby("city")["price_per_sqft"]
-                .mean()
-                .reset_index()
-            )
-
-            if not price_city_df.empty:
-                pie2 = (
-                    alt.Chart(price_city_df)
-                    .mark_arc(innerRadius=60)
-                    .encode(
-                        theta=alt.Theta("price_per_sqft:Q", title="Avg Price / Sqft"),
-                        color=alt.Color("city:N", legend=alt.Legend(title="City")),
-                        tooltip=["city:N", "price_per_sqft:Q"]
-                    )
-                    .properties(width=300, height=300)
-                )
-                st.altair_chart(pie2)
-            else:
-                st.info("No price data available for cities.")
-        else:
-            st.info("Price per sqft field not available.")
-
-    st.divider()
-
-    # -------------------------------
-    # City-Level Market Data Table
-    # -------------------------------
     st.subheader("🏙️ City-Level Market Data")
     st.dataframe(state_city_df, use_container_width=True)
 
     st.divider()
 
     # -------------------------------
-    # Checkbox-Based Question Selector
+    # Checkbox-Based Question Selection
     # -------------------------------
     st.subheader("💬 Market Analysis Assistant")
 
@@ -268,32 +196,28 @@ def show_state_view():
         "What if property attributes change in this city?"
     ]
 
-    st.write("🤖 **Assistant:** Select one or more questions to analyze:")
+    st.write("🤖 Select one or more analysis goals:")
 
     selected_questions = st.multiselect(
-        "Choose analysis questions:",
+        "Analysis questions",
         questions
     )
 
-    # Store selected questions as a list
     st.session_state.selected_question = selected_questions
 
-    # -------------------------------
-    # City Selection & Navigation
-    # -------------------------------
     selected_city = st.selectbox(
         "Select City for Deep‑Dive",
         sorted(state_city_df["city"].unique())
     )
 
-    col_left, col_right = st.columns(2)
+    col1, col2 = st.columns(2)
 
-    with col_left:
+    with col1:
         if st.button("← Back to India"):
             st.session_state.view = "INDIA"
             st.session_state.selected_state = None
 
-    with col_right:
+    with col2:
         if st.button("Proceed to City Comparison →"):
             st.session_state.selected_city = selected_city
             st.session_state.view = "CITY"
@@ -304,7 +228,7 @@ def show_city_view():
     city = st.session_state.selected_city
     state = st.session_state.selected_state
 
-    st.title(f"🏙️ City Deep‑Dive – {city}")
+    st.title(f"🏙️ City Deep‑Dive & Comparision – {city}")
     st.caption(f"State context: {state}")
 
     col1, col2 = st.columns([3, 1])
