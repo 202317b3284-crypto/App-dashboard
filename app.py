@@ -222,36 +222,118 @@ def show_state_view():
             st.session_state.selected_city = selected_city
             st.session_state.view = "CITY"
 # -------------------------------------------------
-# CITY VIEW
+# CITY - STATE Comparision VIEW
 # -------------------------------------------------
 def show_city_view():
     city = st.session_state.selected_city
     state = st.session_state.selected_state
+    selected_questions = st.session_state.selected_question
 
-    st.title(f"🏙️ City Deep‑Dive & Comparision – {city}")
-    st.caption(f"State context: {state}")
+    # -------------------------------------------------
+    # Header & Context
+    # -------------------------------------------------
+    st.title(f"🏙️ City–State Comparison – {city}")
+    st.caption(f"Comparing **{city}** with **{state}** benchmarks")
 
-    col1, col2 = st.columns([3, 1])
+    # -------------------------------------------------
+    # Selected Analysis Objectives
+    # -------------------------------------------------
+    st.subheader("🎯 Selected Analysis Objectives")
+
+    if selected_questions:
+        for q in selected_questions:
+            st.write(f"• {q}")
+    else:
+        st.info("No specific analysis objectives selected. Showing general comparison.")
+
+    st.divider()
+
+    # -------------------------------------------------
+    # KPI Comparison Section
+    # -------------------------------------------------
+    st.subheader("📌 Key Comparison Metrics")
+
+    # Filter data
+    city_df_filtered = city_df[
+        (city_df["city"] == city) & (city_df["state"] == state)
+    ]
+    state_df_filtered = india_df[india_df["state"] == state]
+
+    # Compute KPIs safely
+    city_avg_price = (
+        city_df_filtered["price_per_sqft"].mean()
+        if "price_per_sqft" in city_df_filtered.columns and not city_df_filtered.empty
+        else None
+    )
+
+    state_avg_price = (
+        state_df_filtered["price_sqft"].iloc[0]
+        if "price_sqft" in state_df_filtered.columns and not state_df_filtered.empty
+        else None
+    )
+
+    col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.subheader("City‑Level Data")
-        st.dataframe(
-            city_df[
-                (city_df["city"] == city) &
-                (city_df["state"] == state)
-            ],
-            use_container_width=True
-        )
+        if city_avg_price:
+            st.metric("City Avg Price / Sqft", f"₹ {int(city_avg_price):,}")
+        else:
+            st.metric("City Avg Price / Sqft", "N/A")
 
     with col2:
-        st.subheader("State Benchmarks")
-        state_row = india_df[india_df.get("state", "") == state]
-        if not state_row.empty and "price_sqft" in state_row.columns:
-            st.metric(
-                "State Avg Price / Sqft",
-                f"₹ {int(state_row['price_sqft'].iloc[0]):,}"
-            )
+        if state_avg_price:
+            st.metric("State Avg Price / Sqft", f"₹ {int(state_avg_price):,}")
+        else:
+            st.metric("State Avg Price / Sqft", "N/A")
 
+    with col3:
+        if city_avg_price and state_avg_price:
+            diff = city_avg_price - state_avg_price
+            st.metric("Difference", f"₹ {int(diff):,}")
+        else:
+            st.metric("Difference", "N/A")
+
+    st.divider()
+
+    # -------------------------------------------------
+    # Dynamic Analysis Section (Question‑Driven)
+    # -------------------------------------------------
+    st.subheader("📊 Analysis Based on Selected Objectives")
+
+    if not selected_questions:
+        st.info(
+            "Select analysis objectives on the State page to see "
+            "question‑driven insights here."
+        )
+    else:
+        for q in selected_questions:
+            st.markdown(f"### 🔹 {q}")
+            st.write(
+                "Relevant charts and insights for this question will appear here."
+            )
+            st.info("Visualization logic will be added in the next stage.")
+            st.markdown("---")
+
+    # -------------------------------------------------
+    # Detailed Comparison Tables
+    # -------------------------------------------------
+    st.subheader("📋 Detailed Comparison Data")
+
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        st.caption("City‑Level Data")
+        st.dataframe(city_df_filtered, use_container_width=True)
+
+    with col_right:
+        st.caption("State‑Level Benchmarks")
+        st.dataframe(state_df_filtered, use_container_width=True)
+
+    st.divider()
+
+    # -------------------------------------------------
+    # Navigation
+    # -------------------------------------------------
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
 
