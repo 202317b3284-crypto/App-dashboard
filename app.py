@@ -140,55 +140,138 @@ def show_state_view():
 def show_city_view():
     city = st.session_state.selected_city
     state = st.session_state.selected_state
-    questions = st.session_state.selected_question
+    selected_questions = st.session_state.selected_question
 
-    city_df_local = city_df[
-        (city_df["city"] == city) &
-        (city_df["state"] == state)
-    ].copy()
+    # -------------------------------------------------
+    # Helper to find price-per-sqft column dynamically
+    # -------------------------------------------------
+    def find_price_column(df):
+        for col in df.columns:
+            if "price" in col and "sqft" in col:
+                return col
+        return None
 
-    # ✅ Convert price column safely
-    city_df_local["price_numeric"] = (
-        city_df_local[PRICE_COL_CITY]
-        .astype(str)
-        .str.replace("₹", "", regex=False)
-        .str.replace(",", "", regex=False)
-        .str.strip()
-        .astype(float)
-    )
-
-    city_avg = city_df_local["price_numeric"].mean()
-    state_avg = india_df[india_df["state"] == state][PRICE_COL_STATE].iloc[0]
-
+    # -------------------------------------------------
+    # Header & Context
+    # -------------------------------------------------
     st.title(f"🏙️ City–State Comparison – {city}")
-    st.caption(f"Locality‑level analysis benchmarked against **{state}**")
+    st.caption(f"Comparing **{city}** with **{state}** benchmarks")
 
-    st.subheader("📌 Key Comparison Metrics")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
-    c2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
-    c3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
-
+    # -------------------------------------------------
+    # Selected Analysis Objectives
+    # -------------------------------------------------
     st.subheader("🎯 Selected Analysis Objectives")
-    for q in questions:
-        st.write(f"• {q}")
 
-    st.subheader("📊 Locality‑Level Price Comparison")
-    locality_avg = (
-        city_df_local
-        .groupby("locality")["price_numeric"]
-        .mean()
-        .sort_values(ascending=False)
+    if selected_questions:
+        for q in selected_questions:
+            st.write(f"• {q}")
+    else:
+        st.info("No specific analysis objectives selected. Showing general comparison.")
+
+    st.divider()
+
+    # -------------------------------------------------
+    # Load & Prepare Data
+    # -------------------------------------------------
+    city_df_filtered = city_df[
+        (city_df["city"] == city) & (city_df["state"] == state)
+    ]
+    state_df_filtered = india_df[india_df["state"] == state]
+
+    price_col_city = find_price_column(city_df_filtered)
+    price_col_state = find_price_column(state_df_filtered)
+
+    # -------------------------------------------------
+    # KPI Calculation (FIXED)
+    # -------------------------------------------------
+    city_avg_price = (
+        city_df_filtered[price_col_city].mean()
+        if price_col_city and not city_df_filtered.empty
+        else None
     )
-    st.bar_chart(locality_avg)
-    st.caption(f"Reference State Average: ₹ {int(state_avg):,}")
 
-    st.subheader("📋 Locality‑Level Data")
-    st.dataframe(city_df_local, use_container_width=True)
+    state_avg_price = (
+        state_df_filtered[price_col_state].iloc[0]
+        if price_col_state and not state_df_filtered.empty
+        else None
+    )
 
+    # -------------------------------------------------
+    # KPI Display
+    # -------------------------------------------------
+    st.subheader("📌 Key Comparison Metrics")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        if city_avg_price is not None:
+            st.metric(
+                "City Avg Price / Sqft",
+                f"₹ {int(city_avg_price):,}"
+            )
+        else:
+            st.metric("City Avg Price / Sqft", "N/A")
+
+    with col2:
+        if state_avg_price is not None:
+            st.metric(
+                "State Avg Price / Sqft",
+                f"₹ {int(state_avg_price):,}"
+            )
+        else:
+            st.metric("State Avg Price / Sqft", "N/A")
+
+    with col3:
+        if city_avg_price is not None and state_avg_price is not None:
+            diff = city_avg_price - state_avg_price
+            st.metric(
+                "Difference",
+                f"₹ {int(diff):,}"
+            )
+        else:
+            st.metric("Difference", "N/A")
+
+    st.divider()
+
+    # -------------------------------------------------
+    # Dynamic Analysis Section (placeholder, correct layout)
+    # -------------------------------------------------
+    st.subheader("📊 Analysis Based on Selected Objectives")
+
+    if not selected_questions:
+        st.info(
+            "Select analysis objectives on the State page to see "
+            "question‑driven insights here."
+        )
+    else:
+        for q in selected_questions:
+            st.markdown(f"### 🔹 {q}")
+            st.write(
+                "Relevant charts and insights for this question will appear here."
+            )
+            st.info("Visualization logic will be added in the next stage.")
+            st.markdown("---")
+
+    # -------------------------------------------------
+    # Detailed Tables
+    # -------------------------------------------------
+    st.subheader("📋 Detailed Comparison Data")
+
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        st.caption("City‑Level Data (All Localities)")
+        st.dataframe(city_df_filtered, use_container_width=True)
+
+    with col_right:
+        st.caption("State‑Level Benchmarks")
+        st.dataframe(state_df_filtered, use_container_width=True)
+
+    # -------------------------------------------------
+    # Navigation
+    # -------------------------------------------------
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
-
 # -------------------------------------------------
 # APP CONTROLLER
 # -------------------------------------------------
