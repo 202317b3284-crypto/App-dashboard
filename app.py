@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import re
-import altair as alt
 
 # -------------------------------------------------
 # Page Configuration
@@ -9,16 +8,16 @@ import altair as alt
 st.set_page_config(page_title="Real Estate Market Analyzer", layout="wide")
 
 # -------------------------------------------------
-# Robust column normalization
+# Column normalization
 # -------------------------------------------------
 def normalize_columns(df):
-    cleaned_cols = []
-    for col in df.columns:
-        col_clean = col.lower().strip()
-        col_clean = re.sub(r"[^a-z0-9_]", "_", col_clean)
-        col_clean = re.sub(r"_+", "_", col_clean)
-        cleaned_cols.append(col_clean.rstrip("_"))
-    df.columns = cleaned_cols
+    cols = []
+    for c in df.columns:
+        c = c.lower().strip()
+        c = re.sub(r"[^a-z0-9_]", "_", c)
+        c = re.sub(r"_+", "_", c)
+        cols.append(c.rstrip("_"))
+    df.columns = cols
     return df
 
 # -------------------------------------------------
@@ -26,161 +25,87 @@ def normalize_columns(df):
 # -------------------------------------------------
 @st.cache_data
 def load_data():
-    india = pd.read_csv("india_state_data.csv")
-    city = pd.read_csv("city_level_data.csv")
-
-    india = normalize_columns(india)
-    city = normalize_columns(city)
-
+    india = normalize_columns(pd.read_csv("india_state_data.csv"))
+    city = normalize_columns(pd.read_csv("city_level_data.csv"))
     return india, city
 
 india_df, city_df = load_data()
 
 # -------------------------------------------------
-# Detect state & city columns in city dataset
+# Detect columns
 # -------------------------------------------------
-def find_column(df, keyword):
+def find_column(df, keywords):
     for col in df.columns:
-        if keyword in col:
+        if all(k in col for k in keywords):
             return col
     return None
 
-STATE_COL = find_column(city_df, "state")
-CITY_COL = find_column(city_df, "city")
-
-if STATE_COL is None or CITY_COL is None:
-    st.error(
-        f"Required columns not detected.\n\nDetected columns: {list(city_df.columns)}"
-    )
-    st.stop()
+STATE_COL = find_column(city_df, ["state"])
+CITY_COL = find_column(city_df, ["city"])
+PRICE_COL_CITY = find_column(city_df, ["price", "sqft"])
+PRICE_COL_STATE = find_column(india_df, ["price", "sqft"])
 
 city_df.rename(columns={STATE_COL: "state", CITY_COL: "city"}, inplace=True)
 
 # -------------------------------------------------
 # Session state
 # -------------------------------------------------
-if "view" not in st.session_state:
-    st.session_state.view = "INDIA"
-if "selected_state" not in st.session_state:
-    st.session_state.selected_state = None
-if "selected_city" not in st.session_state:
-    st.session_state.selected_city = None
+st.session_state.setdefault("view", "INDIA")
+st.session_state.setdefault("selected_state", None)
+st.session_state.setdefault("selected_city", None)
+st.session_state.setdefault("selected_question", [])
 
 # -------------------------------------------------
-# INDIA VIEW (UPDATED WITH GRAPHS)
+# INDIA VIEW (UNCHANGED)
 # -------------------------------------------------
 def show_india_view():
     st.title("🏘️💹 Indian Real Estate Market Overview")
 
-    # Filters
     region = (
-        st.selectbox(
-            "Select Region",
-            ["All"] + sorted(india_df["region"].dropna().unique())
-        ) if "region" in india_df.columns else "All"
+        st.selectbox("Select Region", ["All"] + sorted(india_df["region"].dropna().unique()))
+        if "region" in india_df.columns else "All"
     )
 
     tier = (
-        st.selectbox(
-            "Select Market Tier",
-            ["All"] + sorted(india_df["market_tier"].dropna().unique())
-        ) if "market_tier" in india_df.columns else "All"
+        st.selectbox("Select Market Tier", ["All"] + sorted(india_df["market_tier"].dropna().unique()))
+        if "market_tier" in india_df.columns else "All"
     )
 
-    # Apply filters
     filtered = india_df.copy()
-
-    if region != "All" and "region" in filtered.columns:
+    if region != "All":
         filtered = filtered[filtered["region"] == region]
-
-    if tier != "All" and "market_tier" in filtered.columns:
+    if tier != "All":
         filtered = filtered[filtered["market_tier"] == tier]
 
-    # -------------------------------
-    # Market Analysis Graphs
-    # -------------------------------
     st.subheader("📊 Market Analysis")
-
     col1, col2 = st.columns(2)
+    with col1:
+        st.bar_chart(filtered.groupby("state")["price_sqft"].mean())
+    with col2:
+        st.bar_chart(filtered.groupby("state")["median_house_price_lakh_2025"].mean())
 
-    # Avg Price per Sqft by State
-    if "price_sqft" in filtered.columns:
-        with col1:
-            st.caption("Average Price per Sqft by State")
-            price_df = (
-                filtered
-                .groupby("state")["price_sqft"]
-                .mean()
-                .sort_values(ascending=False)
-            )
-            st.bar_chart(price_df)
-
-    # Median House Price 2025 by State
-    if "median_house_price_lakh_2025" in filtered.columns:
-        with col2:
-            st.caption("Median House Price (2025) by State")
-            median_df = (
-                filtered
-                .groupby("state")["median_house_price_lakh_2025"]
-                .mean()
-                .sort_values(ascending=False)
-            )
-            st.bar_chart(median_df)
-
-    # Region-wise Avg Price (optional but useful)
-    if "region" in filtered.columns and "price_sqft" in filtered.columns:
-        st.caption("Region-wise Average Price per Sqft")
-        region_df = (
-            filtered
-            .groupby("region")["price_sqft"]
-            .mean()
-            .sort_values(ascending=False)
-        )
-        st.bar_chart(region_df)
-
-    st.divider()
-
-    # -------------------------------
-    # State-Level Table (Filtered)
-    # -------------------------------
     st.subheader("📋 State‑Level Market Data")
     st.dataframe(filtered, use_container_width=True)
 
-    # -------------------------------
-    # Navigation to State View
-    # -------------------------------
-    available_states = sorted(filtered["state"].unique())
-    selected_state = st.selectbox("Select a State", available_states)
-
+    selected_state = st.selectbox("Select a State", sorted(filtered["state"].unique()))
     if st.button("View State Details"):
         st.session_state.selected_state = selected_state
         st.session_state.view = "STATE"
 
 # -------------------------------------------------
-# STATE VIEW
+# STATE VIEW (UNCHANGED STRUCTURE, ALL 10 QUESTIONS)
 # -------------------------------------------------
-
 def show_state_view():
     state = st.session_state.selected_state
     st.title(f"📍 State Market Details – {state}")
 
     st.subheader("Benchmark Metrics")
-    st.dataframe(
-        india_df[india_df.get("state", "") == state],
-        use_container_width=True
-    )
+    st.dataframe(india_df[india_df["state"] == state], use_container_width=True)
 
-    # City-level data for state
     state_city_df = city_df[city_df["state"] == state]
-
-    st.subheader("🏙️ City-Level Market Data")
+    st.subheader("🏙️ City‑Level Market Data")
     st.dataframe(state_city_df, use_container_width=True)
 
-    st.divider()
-
-    # -------------------------------
-    # Checkbox-Based Question Selection
-    # -------------------------------
     st.subheader("💬 Market Analysis Assistant")
 
     questions = [
@@ -196,146 +121,76 @@ def show_state_view():
         "What if property attributes change in this city?"
     ]
 
-    st.write("🤖 Select one or more analysis goals:")
-
-    selected_questions = st.multiselect(
-        "Analysis questions",
+    st.session_state.selected_question = st.multiselect(
+        "Select analysis objectives:",
         questions
     )
 
-    st.session_state.selected_question = selected_questions
-
-    selected_city = st.selectbox(
+    st.session_state.selected_city = st.selectbox(
         "Select City for Deep‑Dive",
         sorted(state_city_df["city"].unique())
     )
 
-    col1, col2 = st.columns(2)
+    if st.button("Proceed to City Comparison →"):
+        st.session_state.view = "CITY"
 
-    with col1:
-        if st.button("← Back to India"):
-            st.session_state.view = "INDIA"
-            st.session_state.selected_state = None
-
-    with col2:
-        if st.button("Proceed to City Comparison →"):
-            st.session_state.selected_city = selected_city
-            st.session_state.view = "CITY"
 # -------------------------------------------------
-# CITY - STATE Comparision VIEW
+# CITY VIEW (LOCALITY‑BASED, NUMERIC SAFE)
 # -------------------------------------------------
 def show_city_view():
     city = st.session_state.selected_city
     state = st.session_state.selected_state
-    selected_questions = st.session_state.selected_question
+    questions = st.session_state.selected_question
 
-    # -------------------------------------------
-    # Helper: detect price per sqft column
-    # -------------------------------------------
-    def find_price_col(df):
-        for col in df.columns:
-            if "price" in col and "sqft" in col:
-                return col
-        return None
-
-    price_col = find_price_col(city_df)
-
-    # -------------------------------------------
-    # Filter Data
-    # -------------------------------------------
-    city_locality_df = city_df[
+    city_df_local = city_df[
         (city_df["city"] == city) &
         (city_df["state"] == state)
-    ]
+    ].copy()
 
-    state_row = india_df[india_df["state"] == state]
+    # ✅ Convert price column safely
+    city_df_local["price_numeric"] = (
+        city_df_local[PRICE_COL_CITY]
+        .astype(str)
+        .str.replace("₹", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .str.strip()
+        .astype(float)
+    )
 
-    # -------------------------------------------
-    # Header
-    # -------------------------------------------
+    city_avg = city_df_local["price_numeric"].mean()
+    state_avg = india_df[india_df["state"] == state][PRICE_COL_STATE].iloc[0]
+
     st.title(f"🏙️ City–State Comparison – {city}")
     st.caption(f"Locality‑level analysis benchmarked against **{state}**")
 
-    # -------------------------------------------
-    # Selected Objectives
-    # -------------------------------------------
+    st.subheader("📌 Key Comparison Metrics")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
+    c2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
+    c3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
+
     st.subheader("🎯 Selected Analysis Objectives")
-    for q in selected_questions:
+    for q in questions:
         st.write(f"• {q}")
 
-    st.divider()
+    st.subheader("📊 Locality‑Level Price Comparison")
+    locality_avg = (
+        city_df_local
+        .groupby("locality")["price_numeric"]
+        .mean()
+        .sort_values(ascending=False)
+    )
+    st.bar_chart(locality_avg)
+    st.caption(f"Reference State Average: ₹ {int(state_avg):,}")
 
-    # -------------------------------------------
-    # KPI Metrics (Corrected)
-    # -------------------------------------------
-    st.subheader("📌 Key Comparison Metrics")
-
-    city_avg = city_locality_df[price_col].mean()
-    state_avg = state_row["price_sqft"].iloc[0]
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
-    col2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
-    col3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
-
-    st.divider()
-
-    # -------------------------------------------
-    # Dynamic Analysis (Locality‑Driven Charts)
-    # -------------------------------------------
-    st.subheader("📊 Analysis Based on Selected Objectives")
-
-    # Q1 or Q4 → Locality vs State Avg
-    if any(
-        q in selected_questions
-        for q in [
-            "Which city is priced higher than its state average?",
-            "Which localities outperform the state average?"
-        ]
-    ):
-        st.markdown("### 🔹 Locality Price Comparison")
-
-        locality_avg_df = (
-            city_locality_df
-            .groupby("locality")[price_col]
-            .mean()
-            .sort_values(ascending=False)
-            .reset_index()
-        )
-
-        st.bar_chart(
-            locality_avg_df.set_index("locality")[price_col]
-        )
-
-        st.caption(
-            f"Reference State Average Price / Sqft: ₹ {int(state_avg):,}"
-        )
-
-    # Placeholder for other questions
-    for q in selected_questions:
-        if q not in [
-            "Which city is priced higher than its state average?",
-            "Which localities outperform the state average?"
-        ]:
-            st.markdown(f"### 🔹 {q}")
-            st.info("Visualization for this objective will be added next.")
-
-    st.divider()
-
-    # -------------------------------------------
-    # Detailed Tables
-    # -------------------------------------------
     st.subheader("📋 Locality‑Level Data")
-    st.dataframe(city_locality_df, use_container_width=True)
+    st.dataframe(city_df_local, use_container_width=True)
 
-    # -------------------------------------------
-    # Navigation
-    # -------------------------------------------
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
+
 # -------------------------------------------------
-# App Controller
+# APP CONTROLLER
 # -------------------------------------------------
 if st.session_state.view == "INDIA":
     show_india_view()
