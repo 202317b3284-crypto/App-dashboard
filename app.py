@@ -229,114 +229,111 @@ def show_city_view():
     state = st.session_state.selected_state
     selected_questions = st.session_state.selected_question
 
-    # -------------------------------------------------
-    # Header & Context
-    # -------------------------------------------------
+    # -------------------------------------------
+    # Helper: detect price per sqft column
+    # -------------------------------------------
+    def find_price_col(df):
+        for col in df.columns:
+            if "price" in col and "sqft" in col:
+                return col
+        return None
+
+    price_col = find_price_col(city_df)
+
+    # -------------------------------------------
+    # Filter Data
+    # -------------------------------------------
+    city_locality_df = city_df[
+        (city_df["city"] == city) &
+        (city_df["state"] == state)
+    ]
+
+    state_row = india_df[india_df["state"] == state]
+
+    # -------------------------------------------
+    # Header
+    # -------------------------------------------
     st.title(f"🏙️ City–State Comparison – {city}")
-    st.caption(f"Comparing **{city}** with **{state}** benchmarks")
+    st.caption(f"Locality‑level analysis benchmarked against **{state}**")
 
-    # -------------------------------------------------
-    # Selected Analysis Objectives
-    # -------------------------------------------------
+    # -------------------------------------------
+    # Selected Objectives
+    # -------------------------------------------
     st.subheader("🎯 Selected Analysis Objectives")
-
-    if selected_questions:
-        for q in selected_questions:
-            st.write(f"• {q}")
-    else:
-        st.info("No specific analysis objectives selected. Showing general comparison.")
+    for q in selected_questions:
+        st.write(f"• {q}")
 
     st.divider()
 
-    # -------------------------------------------------
-    # KPI Comparison Section
-    # -------------------------------------------------
+    # -------------------------------------------
+    # KPI Metrics (Corrected)
+    # -------------------------------------------
     st.subheader("📌 Key Comparison Metrics")
 
-    # Filter data
-    city_df_filtered = city_df[
-        (city_df["city"] == city) & (city_df["state"] == state)
-    ]
-    state_df_filtered = india_df[india_df["state"] == state]
-
-    # Compute KPIs safely
-    city_avg_price = (
-        city_df_filtered["price_per_sqft"].mean()
-        if "price_per_sqft" in city_df_filtered.columns and not city_df_filtered.empty
-        else None
-    )
-
-    state_avg_price = (
-        state_df_filtered["price_sqft"].iloc[0]
-        if "price_sqft" in state_df_filtered.columns and not state_df_filtered.empty
-        else None
-    )
+    city_avg = city_locality_df[price_col].mean()
+    state_avg = state_row["price_sqft"].iloc[0]
 
     col1, col2, col3 = st.columns(3)
 
-    with col1:
-        if city_avg_price:
-            st.metric("City Avg Price / Sqft", f"₹ {int(city_avg_price):,}")
-        else:
-            st.metric("City Avg Price / Sqft", "N/A")
-
-    with col2:
-        if state_avg_price:
-            st.metric("State Avg Price / Sqft", f"₹ {int(state_avg_price):,}")
-        else:
-            st.metric("State Avg Price / Sqft", "N/A")
-
-    with col3:
-        if city_avg_price and state_avg_price:
-            diff = city_avg_price - state_avg_price
-            st.metric("Difference", f"₹ {int(diff):,}")
-        else:
-            st.metric("Difference", "N/A")
+    col1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
+    col2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
+    col3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
 
     st.divider()
 
-    # -------------------------------------------------
-    # Dynamic Analysis Section (Question‑Driven)
-    # -------------------------------------------------
+    # -------------------------------------------
+    # Dynamic Analysis (Locality‑Driven Charts)
+    # -------------------------------------------
     st.subheader("📊 Analysis Based on Selected Objectives")
 
-    if not selected_questions:
-        st.info(
-            "Select analysis objectives on the State page to see "
-            "question‑driven insights here."
+    # Q1 or Q4 → Locality vs State Avg
+    if any(
+        q in selected_questions
+        for q in [
+            "Which city is priced higher than its state average?",
+            "Which localities outperform the state average?"
+        ]
+    ):
+        st.markdown("### 🔹 Locality Price Comparison")
+
+        locality_avg_df = (
+            city_locality_df
+            .groupby("locality")[price_col]
+            .mean()
+            .sort_values(ascending=False)
+            .reset_index()
         )
-    else:
-        for q in selected_questions:
+
+        st.bar_chart(
+            locality_avg_df.set_index("locality")[price_col]
+        )
+
+        st.caption(
+            f"Reference State Average Price / Sqft: ₹ {int(state_avg):,}"
+        )
+
+    # Placeholder for other questions
+    for q in selected_questions:
+        if q not in [
+            "Which city is priced higher than its state average?",
+            "Which localities outperform the state average?"
+        ]:
             st.markdown(f"### 🔹 {q}")
-            st.write(
-                "Relevant charts and insights for this question will appear here."
-            )
-            st.info("Visualization logic will be added in the next stage.")
-            st.markdown("---")
-
-    # -------------------------------------------------
-    # Detailed Comparison Tables
-    # -------------------------------------------------
-    st.subheader("📋 Detailed Comparison Data")
-
-    col_left, col_right = st.columns(2)
-
-    with col_left:
-        st.caption("City‑Level Data")
-        st.dataframe(city_df_filtered, use_container_width=True)
-
-    with col_right:
-        st.caption("State‑Level Benchmarks")
-        st.dataframe(state_df_filtered, use_container_width=True)
+            st.info("Visualization for this objective will be added next.")
 
     st.divider()
 
-    # -------------------------------------------------
+    # -------------------------------------------
+    # Detailed Tables
+    # -------------------------------------------
+    st.subheader("📋 Locality‑Level Data")
+    st.dataframe(city_locality_df, use_container_width=True)
+
+    # -------------------------------------------
     # Navigation
-    # -------------------------------------------------
+    # -------------------------------------------
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
-
 # -------------------------------------------------
 # App Controller
 # -------------------------------------------------
