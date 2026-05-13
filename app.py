@@ -8,7 +8,7 @@ import re
 st.set_page_config(page_title="Real Estate Market Analyzer", layout="wide")
 
 # -------------------------------------------------
-# Column normalization
+# Column normalization (unchanged)
 # -------------------------------------------------
 def normalize_columns(df):
     cols = []
@@ -21,18 +21,21 @@ def normalize_columns(df):
     return df
 
 # -------------------------------------------------
-# Load data
+# Load data (UPDATED → Excel support)
 # -------------------------------------------------
 @st.cache_data
 def load_data():
     india = normalize_columns(pd.read_csv("india_state_data.csv"))
-    city = normalize_columns(pd.read_csv("city_level_data.csv"))
+
+    city = pd.read_excel("city_level_data.xlsx", engine="openpyxl")
+    city = normalize_columns(city)
+
     return india, city
 
 india_df, city_df = load_data()
 
 # -------------------------------------------------
-# Detect columns
+# Column detection
 # -------------------------------------------------
 def find_column(df, keywords):
     for col in df.columns:
@@ -48,15 +51,15 @@ PRICE_COL_STATE = find_column(india_df, ["price", "sqft"])
 city_df.rename(columns={STATE_COL: "state", CITY_COL: "city"}, inplace=True)
 
 # -------------------------------------------------
-# ✅ CRITICAL FIX: create numeric price column ONCE
+# ✅ FIX: Safe numeric conversion (MOST IMPORTANT)
 # -------------------------------------------------
-city_df["price_numeric"] = (
+city_df["price_numeric"] = pd.to_numeric(
     city_df[PRICE_COL_CITY]
-    .astype(str)
-    .str.replace("₹", "", regex=False)
-    .str.replace(",", "", regex=False)
-    .str.strip()
-    .astype(float)
+        .astype(str)
+        .str.replace("₹", "", regex=False)
+        .str.replace(",", "", regex=False)
+        .str.strip(),
+    errors="coerce"
 )
 
 # -------------------------------------------------
@@ -68,13 +71,20 @@ st.session_state.setdefault("selected_city", None)
 st.session_state.setdefault("selected_question", [])
 
 # -------------------------------------------------
-# INDIA VIEW (UNCHANGED)
+# PAGE 1 → INDIA VIEW (UNCHANGED)
 # -------------------------------------------------
 def show_india_view():
     st.title("🏘️💹 Indian Real Estate Market Overview")
 
-    region = st.selectbox("Select Region", ["All"] + sorted(india_df["region"].unique()))
-    tier = st.selectbox("Select Market Tier", ["All"] + sorted(india_df["market_tier"].unique()))
+    region = st.selectbox(
+        "Select Region",
+        ["All"] + sorted(india_df["region"].dropna().unique())
+    )
+
+    tier = st.selectbox(
+        "Select Market Tier",
+        ["All"] + sorted(india_df["market_tier"].dropna().unique())
+    )
 
     filtered = india_df.copy()
     if region != "All":
@@ -83,20 +93,26 @@ def show_india_view():
         filtered = filtered[filtered["market_tier"] == tier]
 
     st.subheader("📊 Market Analysis")
+
     col1, col2 = st.columns(2)
-    col1.bar_chart(filtered.groupby("state")[PRICE_COL_STATE].mean())
-    col2.bar_chart(filtered.groupby("state")["median_house_price_lakh_2025"].mean())
+    with col1:
+        st.bar_chart(filtered.groupby("state")[PRICE_COL_STATE].mean())
+    with col2:
+        st.bar_chart(filtered.groupby("state")["median_house_price_lakh_2025"].mean())
 
     st.subheader("📋 State‑Level Market Data")
     st.dataframe(filtered, use_container_width=True)
 
-    selected_state = st.selectbox("Select a State", sorted(filtered["state"].unique()))
+    selected_state = st.selectbox(
+        "Select a State", sorted(filtered["state"].unique())
+    )
+
     if st.button("View State Details"):
         st.session_state.selected_state = selected_state
         st.session_state.view = "STATE"
 
 # -------------------------------------------------
-# STATE VIEW (UNCHANGED STRUCTURE – ALL 10 QUESTIONS)
+# PAGE 2 → STATE VIEW (10 QUESTIONS – UNCHANGED)
 # -------------------------------------------------
 def show_state_view():
     state = st.session_state.selected_state
@@ -107,7 +123,7 @@ def show_state_view():
 
     state_city_df = city_df[city_df["state"] == state]
 
-    st.subheader("🏙️ City‑Level Market Data")
+    st.subheader("🏙️ City-Level Market Data")
     st.dataframe(state_city_df, use_container_width=True)
 
     st.subheader("💬 Market Analysis Assistant")
@@ -139,7 +155,7 @@ def show_state_view():
         st.session_state.view = "CITY"
 
 # -------------------------------------------------
-# CITY VIEW (LOCALITY‑BASED, SAFE)
+# PAGE 3 → CITY VIEW (FIXED & FINAL)
 # -------------------------------------------------
 def show_city_view():
     city = st.session_state.selected_city
@@ -151,34 +167,59 @@ def show_city_view():
         (city_df["state"] == state)
     ].copy()
 
+    # ✅ Safe KPI calculation
     city_avg = df["price_numeric"].mean()
     state_avg = india_df[india_df["state"] == state][PRICE_COL_STATE].iloc[0]
 
+    # -----------------------------
+    # Header
+    # -----------------------------
     st.title(f"🏙️ City–State Comparison – {city}")
-    st.caption(f"Locality‑level analysis benchmarked against **{state}**")
+    st.caption(f"Locality-level analysis vs **{state}** benchmark")
 
+    # -----------------------------
+    # KPI Section
+    # -----------------------------
     st.subheader("📌 Key Comparison Metrics")
+
     c1, c2, c3 = st.columns(3)
     c1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
     c2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
     c3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
 
+    # -----------------------------
+    # Selected Questions
+    # -----------------------------
     st.subheader("🎯 Selected Analysis Objectives")
-    for q in questions:
-        st.write(f"• {q}")
+    if questions:
+        for q in questions:
+            st.write(f"• {q}")
+    else:
+        st.info("No specific objectives selected")
 
-    st.subheader("📊 Locality‑Level Price Comparison")
+    # -----------------------------
+    # Core Analysis (locality driven)
+    # -----------------------------
+    st.subheader("📊 Locality‑Level Price Analysis")
+
     locality_avg = (
         df.groupby("locality")["price_numeric"]
         .mean()
         .sort_values(ascending=False)
     )
-    st.bar_chart(locality_avg)
-    st.caption(f"Reference State Avg Price: ₹ {int(state_avg):,}")
 
-    st.subheader("📋 Locality‑Level Data")
+    st.bar_chart(locality_avg)
+    st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
+
+    # -----------------------------
+    # Data Table
+    # -----------------------------
+    st.subheader("📋 Locality Data")
     st.dataframe(df, use_container_width=True)
 
+    # -----------------------------
+    # Navigation
+    # -----------------------------
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
 
