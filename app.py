@@ -195,51 +195,51 @@ def show_city_view():
 
     for q in questions:
 
-    if "priced higher" in q:
-        if city_avg > state_avg:
-            st.success(f"The city is priced higher than the state by ₹{int(city_avg - state_avg):,} per sqft.")
-        else:
-            st.info("The city is priced lower than the state average.")
-
-    elif "affordable" in q:
-        if city_avg < state_avg:
-            st.success("The city is more affordable compared to the state.")
-        else:
-            st.warning("The city is less affordable due to higher prices.")
-
-    elif "growing" in q:
-        growth_ratio = city_avg / state_avg if state_avg else 0
-        st.info(f"The city shows a growth ratio of {round(growth_ratio, 2)}× compared to the state.")
-
-    elif "localities outperform" in q:
-        outperform = df[df["price_numeric"] > state_avg]["locality"].dropna().unique()
-        if len(outperform) > 0:
-            st.success(f"Outperforming localities: {', '.join(outperform[:5])}")
-        else:
-            st.info("No locality is outperforming the state average.")
-
-    elif "high-growth state" in q:
-        if state_avg > city_avg * 0.8:
-            st.success("The state shows strong growth potential based on pricing trends.")
-        else:
-            st.info("The state shows moderate or stable growth trends.")
-
-    elif "property size" in q:
-        st.info("Larger properties tend to command higher total prices, but price per sqft may decrease due to scale advantages.")
-
-    elif "premium or affordable housing" in q:
-        market_type = "Premium" if city_avg > state_avg else "Affordable"
-        st.info(f"The city is primarily a **{market_type} housing market**.")
-
-    elif "metro/IT proximity" in q:
-        st.info("Properties closer to metro or IT hubs typically have higher prices, showing strong location-based demand.")
-
-    elif "value for money" in q:
-        ratio = state_avg / city_avg if city_avg else 0
-        st.info(f"The city offers a value score of {round(ratio,2)} relative to the state. Lower price indicates better value.")
-
-    elif "What if property attributes" in q:
-        st.info("Estimated property price changes proportionally with area and price per sqft. This can be extended into a What‑If simulator.")
+        if "priced higher" in q:
+            if city_avg > state_avg:
+                st.success(f"The city is priced higher than the state by ₹{int(city_avg - state_avg):,} per sqft.")
+            else:
+                st.info("The city is priced lower than the state average.")
+    
+        elif "affordable" in q:
+            if city_avg < state_avg:
+                st.success("The city is more affordable compared to the state.")
+            else:
+                st.warning("The city is less affordable due to higher prices.")
+    
+        elif "growing" in q:
+            growth_ratio = city_avg / state_avg if state_avg else 0
+            st.info(f"The city shows a growth ratio of {round(growth_ratio, 2)}× compared to the state.")
+    
+        elif "localities outperform" in q:
+            outperform = df[df["price_numeric"] > state_avg]["locality"].dropna().unique()
+            if len(outperform) > 0:
+                st.success(f"Outperforming localities: {', '.join(outperform[:5])}")
+            else:
+                st.info("No locality is outperforming the state average.")
+    
+        elif "high-growth state" in q:
+            if state_avg > city_avg * 0.8:
+                st.success("The state shows strong growth potential based on pricing trends.")
+            else:
+                st.info("The state shows moderate or stable growth trends.")
+    
+        elif "property size" in q:
+            st.info("Larger properties tend to command higher total prices, but price per sqft may decrease due to scale advantages.")
+    
+        elif "premium or affordable housing" in q:
+            market_type = "Premium" if city_avg > state_avg else "Affordable"
+            st.info(f"The city is primarily a **{market_type} housing market**.")
+    
+        elif "metro/IT proximity" in q:
+            st.info("Properties closer to metro or IT hubs typically have higher prices, showing strong location-based demand.")
+    
+        elif "value for money" in q:
+            ratio = state_avg / city_avg if city_avg else 0
+            st.info(f"The city offers a value score of {round(ratio,2)} relative to the state. Lower price indicates better value.")
+    
+        elif "What if property attributes" in q:
+            st.info("Estimated property price changes proportionally with area and price per sqft. This can be extended into a What‑If simulator.")
 
     # ✅ Correct alignment continues
     st.subheader("📊 Locality‑Level Price Analysis")
