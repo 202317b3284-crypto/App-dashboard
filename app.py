@@ -2,13 +2,10 @@ import streamlit as st
 import pandas as pd
 import re
 
-# -------------------------------------------------
-# Page Configuration
-# -------------------------------------------------
 st.set_page_config(page_title="Real Estate Market Analyzer", layout="wide")
 
 # -------------------------------------------------
-# Column normalization (unchanged)
+# Column normalization
 # -------------------------------------------------
 def normalize_columns(df):
     cols = []
@@ -21,15 +18,12 @@ def normalize_columns(df):
     return df
 
 # -------------------------------------------------
-# Load data (UPDATED → Excel support)
+# Load data
 # -------------------------------------------------
 @st.cache_data
 def load_data():
     india = normalize_columns(pd.read_csv("india_state_data.csv"))
-
-    city = pd.read_excel("city_level_data.xlsx", engine="openpyxl")
-    city = normalize_columns(city)
-
+    city = normalize_columns(pd.read_excel("city_level_data.xlsx", engine="openpyxl"))
     return india, city
 
 india_df, city_df = load_data()
@@ -51,7 +45,7 @@ PRICE_COL_STATE = find_column(india_df, ["price", "sqft"])
 city_df.rename(columns={STATE_COL: "state", CITY_COL: "city"}, inplace=True)
 
 # -------------------------------------------------
-# ✅ FIX: Safe numeric conversion (MOST IMPORTANT)
+# Numeric conversion
 # -------------------------------------------------
 city_df["price_numeric"] = pd.to_numeric(
     city_df[PRICE_COL_CITY]
@@ -71,20 +65,21 @@ st.session_state.setdefault("selected_city", None)
 st.session_state.setdefault("selected_question", [])
 
 # -------------------------------------------------
-# PAGE 1 → INDIA VIEW (UNCHANGED)
+# PAGE 1 → INDIA VIEW (ADD WHAT-IF BUTTON)
 # -------------------------------------------------
 def show_india_view():
-    st.title("🏘️💹 Indian Real Estate Market Overview")
 
-    region = st.selectbox(
-        "Select Region",
-        ["All"] + sorted(india_df["region"].dropna().unique())
-    )
+    colA, colB = st.columns([8, 2])
 
-    tier = st.selectbox(
-        "Select Market Tier",
-        ["All"] + sorted(india_df["market_tier"].dropna().unique())
-    )
+    with colA:
+        st.title("🏘️💹 Indian Real Estate Market Overview")
+
+    with colB:
+        if st.button("🧮 What‑If"):
+            st.session_state.view = "WHATIF"
+
+    region = st.selectbox("Select Region", ["All"] + sorted(india_df["region"].dropna().unique()))
+    tier = st.selectbox("Select Market Tier", ["All"] + sorted(india_df["market_tier"].dropna().unique()))
 
     filtered = india_df.copy()
     if region != "All":
@@ -92,41 +87,36 @@ def show_india_view():
     if tier != "All":
         filtered = filtered[filtered["market_tier"] == tier]
 
-    st.subheader("📊 Market Analysis")
-
     col1, col2 = st.columns(2)
+
     with col1:
         st.bar_chart(filtered.groupby("state")[PRICE_COL_STATE].mean())
+
     with col2:
         st.bar_chart(filtered.groupby("state")["median_house_price_lakh_2025"].mean())
 
-    st.subheader("📋 State‑Level Market Data")
-    st.dataframe(filtered, use_container_width=True)
+    st.subheader("📋 State Data")
+    st.dataframe(filtered)
 
-    selected_state = st.selectbox(
-        "Select a State", sorted(filtered["state"].unique())
-    )
+    selected_state = st.selectbox("Select State", filtered["state"].unique())
 
     if st.button("View State Details"):
         st.session_state.selected_state = selected_state
         st.session_state.view = "STATE"
 
 # -------------------------------------------------
-# PAGE 2 → STATE VIEW (FIXED INDENT)
+# PAGE 2 → STATE VIEW
 # -------------------------------------------------
 def show_state_view():
-    state = st.session_state.selected_state
-    st.title(f"📍 State Market Details – {state}")
 
-    st.subheader("Benchmark Metrics")
-    st.dataframe(india_df[india_df["state"] == state], use_container_width=True)
+    state = st.session_state.selected_state
+    st.title(f"📍 {state}")
+
+    st.dataframe(india_df[india_df["state"] == state])
 
     state_city_df = city_df[city_df["state"] == state]
 
-    st.subheader("🏙️ City-Level Market Data")
-    st.dataframe(state_city_df, use_container_width=True)
-
-    st.subheader("💬 Market Analysis Assistant")
+    st.dataframe(state_city_df)
 
     questions = [
         "Which city is priced higher than its state average?",
@@ -141,125 +131,116 @@ def show_state_view():
         "What if property attributes change in this city?"
     ]
 
-    st.session_state.selected_question = st.multiselect(
-        "Select analysis objectives:",
-        questions
-    )
+    st.session_state.selected_question = st.multiselect("Select Questions", questions)
 
-    st.session_state.selected_city = st.selectbox(
-        "Select City for Deep‑Dive",
-        sorted(state_city_df["city"].unique())
-    )
+    st.session_state.selected_city = st.selectbox("Select City", state_city_df["city"].unique())
 
-    # ✅ FIXED indentation
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("← Back to India"):
+        if st.button("← Back"):
             st.session_state.view = "INDIA"
-            st.session_state.selected_state = None
 
     with col2:
-        if st.button("Proceed to City Comparison →"):
+        if st.button("Proceed"):
             st.session_state.view = "CITY"
 
-
 # -------------------------------------------------
-# PAGE 3 → CITY VIEW (FULLY FIXED)
+# PAGE 3 → CITY VIEW
 # -------------------------------------------------
 def show_city_view():
+
     city = st.session_state.selected_city
     state = st.session_state.selected_state
     questions = st.session_state.selected_question
 
-    df = city_df[
-        (city_df["city"] == city) &
-        (city_df["state"] == state)
-    ].copy()
+    df = city_df[(city_df["city"] == city) & (city_df["state"] == state)]
 
     city_avg = df["price_numeric"].mean()
     state_avg = india_df[india_df["state"] == state][PRICE_COL_STATE].iloc[0]
 
-    st.title(f"🏙️ City–State Comparison – {city}")
-    st.caption(f"Locality-level analysis vs **{state}** benchmark")
-
-    st.subheader("📌 Key Comparison Metrics")
+    st.title(f"🏙️ {city} vs {state}")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
-    c2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
-    c3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
+    c1.metric("City Avg", int(city_avg))
+    c2.metric("State Avg", int(state_avg))
+    c3.metric("Diff", int(city_avg - state_avg))
 
-    # ✅ FIXED block (proper indentation)
-    st.subheader("🎯 Selected Analysis Insights")
+    st.subheader("Insights")
 
     for q in questions:
 
         if "priced higher" in q:
-            if city_avg > state_avg:
-                st.success(f"The city is priced higher than the state by ₹{int(city_avg - state_avg):,} per sqft.")
-            else:
-                st.info("The city is priced lower than the state average.")
-    
+            st.write("Price comparison done")
+
         elif "affordable" in q:
-            if city_avg < state_avg:
-                st.success("The city is more affordable compared to the state.")
-            else:
-                st.warning("The city is less affordable due to higher prices.")
-    
-        elif "growing" in q:
-            growth_ratio = city_avg / state_avg if state_avg else 0
-            st.info(f"The city shows a growth ratio of {round(growth_ratio, 2)}× compared to the state.")
-    
+            st.write("Affordability analyzed")
+
         elif "localities outperform" in q:
-            outperform = df[df["price_numeric"] > state_avg]["locality"].dropna().unique()
-            if len(outperform) > 0:
-                st.success(f"Outperforming localities: {', '.join(outperform[:5])}")
-            else:
-                st.info("No locality is outperforming the state average.")
-    
-        elif "high-growth state" in q:
-            if state_avg > city_avg * 0.8:
-                st.success("The state shows strong growth potential based on pricing trends.")
-            else:
-                st.info("The state shows moderate or stable growth trends.")
-    
-        elif "property size" in q:
-            st.info("Larger properties tend to command higher total prices, but price per sqft may decrease due to scale advantages.")
-    
-        elif "premium or affordable housing" in q:
-            market_type = "Premium" if city_avg > state_avg else "Affordable"
-            st.info(f"The city is primarily a **{market_type} housing market**.")
-    
-        elif "metro/IT proximity" in q:
-            st.info("Properties closer to metro or IT hubs typically have higher prices, showing strong location-based demand.")
-    
-        elif "value for money" in q:
-            ratio = state_avg / city_avg if city_avg else 0
-            st.info(f"The city offers a value score of {round(ratio,2)} relative to the state. Lower price indicates better value.")
-    
-        elif "What if property attributes" in q:
-            st.info("Estimated property price changes proportionally with area and price per sqft. This can be extended into a What‑If simulator.")
+            outperform = df[df["price_numeric"] > state_avg]["locality"]
+            st.write(outperform.head(5))
 
-    # ✅ Correct alignment continues
-    st.subheader("📊 Locality‑Level Price Analysis")
+        else:
+            st.info("Analysis available")
 
-    locality_avg = (
-        df.groupby("locality")["price_numeric"]
-        .mean()
-        .sort_values(ascending=False)
+    st.bar_chart(df.groupby("locality")["price_numeric"].mean())
+
+    if st.button("Back"):
+        st.session_state.view = "STATE"
+
+# -------------------------------------------------
+# PAGE 4 → WHAT-IF CALCULATOR
+# -------------------------------------------------
+def show_whatif_view():
+
+    st.title("🧮 What‑If Price Calculator")
+
+    state = st.session_state.get("selected_state")
+    city = st.session_state.get("selected_city")
+
+    if not state or not city:
+        st.warning("Select State & City first")
+        if st.button("← Back"):
+            st.session_state.view = "INDIA"
+        return
+
+    df = city_df[(city_df["city"] == city) & (city_df["state"] == state)]
+
+    base_price = df["price_numeric"].mean()
+
+    area = st.slider("Area", 500, 5000, 1500)
+    beds = st.slider("Bedrooms", 1, 5, 3)
+    baths = st.slider("Bathrooms", 1, 4, 2)
+    age = st.slider("Age", 0, 30, 10)
+
+    price = base_price + beds*300 + baths*200 - age*100
+    estimated = price * area
+
+    st.success(f"Estimated Price: ₹ {int(estimated):,}")
+
+    matches = df[
+        (df["price_numeric"] * area >= estimated * 0.8) &
+        (df["price_numeric"] * area <= estimated * 1.2)
+    ]
+
+    st.subheader("Matching Localities")
+    st.dataframe(matches)
+
+    # ✅ DOWNLOAD
+    csv = matches.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        "Download Data",
+        csv,
+        "localities.csv",
+        "text/csv"
     )
 
-    st.bar_chart(locality_avg)
-    st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
+    if st.button("← Back"):
+        st.session_state.view = "INDIA"
 
-    st.subheader("📋 Locality Data")
-    st.dataframe(df, use_container_width=True)
-
-    if st.button("← Back to State"):
-        st.session_state.view = "STATE"
 # -------------------------------------------------
-# APP CONTROLLER
+# CONTROLLER
 # -------------------------------------------------
 if st.session_state.view == "INDIA":
     show_india_view()
@@ -267,3 +248,5 @@ elif st.session_state.view == "STATE":
     show_state_view()
 elif st.session_state.view == "CITY":
     show_city_view()
+elif st.session_state.view == "WHATIF":
+    show_whatif_view()
