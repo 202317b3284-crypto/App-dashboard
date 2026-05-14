@@ -202,7 +202,7 @@ def show_city_view():
     # -----------------------------
 st.subheader("🎯 Selected Analysis Insights")
 
-    for q in questions:
+for q in questions:
 
         if "priced higher" in q:
             if city_avg > state_avg:
