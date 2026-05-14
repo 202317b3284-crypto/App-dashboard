@@ -235,7 +235,7 @@ for q in questions:
     # -----------------------------
 st.subheader("📊 Locality‑Level Price Analysis")
 
-    locality_avg = (
+locality_avg = (
         df.groupby("locality")["price_numeric"]
         .mean()
         .sort_values(ascending=False)
@@ -247,8 +247,8 @@ st.subheader("📊 Locality‑Level Price Analysis")
     # -----------------------------
     # Data Table
     # -----------------------------
-    st.subheader("📋 Locality Data")
-    st.dataframe(df, use_container_width=True)
+st.subheader("📋 Locality Data")
+st.dataframe(df, use_container_width=True)
 
     # -----------------------------
     # Navigation
