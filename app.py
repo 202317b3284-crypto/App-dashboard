@@ -203,7 +203,7 @@ def show_city_view():
 st.subheader("🎯 Selected Analysis Insights")
 
     # ✅ put loop INSIDE function
-    for q in questions:
+for q in questions:
 
         if "priced higher" in q:
             if city_avg > state_avg:
@@ -233,17 +233,17 @@ st.subheader("🎯 Selected Analysis Insights")
             st.info("Detailed analysis for this question will be enhanced in next iteration.")
 
     # ✅ continue your code AFTER loop
-    st.subheader("📊 Locality‑Level Price Analysis")
+st.subheader("📊 Locality‑Level Price Analysis")
 
-    locality_avg = (
+locality_avg = (
         df.groupby("locality")["price_numeric"]
         .mean()
         .sort_values(ascending=False)
     )
 
-    st.bar_chart(locality_avg)
+st.bar_chart(locality_avg)
 
-    st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
+st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
 
     # -----------------------------
     # Data Table
