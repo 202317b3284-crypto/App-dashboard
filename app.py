@@ -112,7 +112,7 @@ def show_india_view():
         st.session_state.view = "STATE"
 
 # -------------------------------------------------
-# PAGE 2 → STATE VIEW (10 QUESTIONS – UNCHANGED)
+# PAGE 2 → STATE VIEW (FIXED INDENT)
 # -------------------------------------------------
 def show_state_view():
     state = st.session_state.selected_state
@@ -151,7 +151,7 @@ def show_state_view():
         sorted(state_city_df["city"].unique())
     )
 
-   # ✅ Navigation (INSIDE function, properly indented)
+    # ✅ FIXED indentation
     col1, col2 = st.columns(2)
 
     with col1:
@@ -165,7 +165,7 @@ def show_state_view():
 
 
 # -------------------------------------------------
-# PAGE 3 → CITY VIEW (FIXED & FINAL)
+# PAGE 3 → CITY VIEW (FULLY FIXED)
 # -------------------------------------------------
 def show_city_view():
     city = st.session_state.selected_city
@@ -177,19 +177,12 @@ def show_city_view():
         (city_df["state"] == state)
     ].copy()
 
-    # ✅ Safe KPI calculation
     city_avg = df["price_numeric"].mean()
     state_avg = india_df[india_df["state"] == state][PRICE_COL_STATE].iloc[0]
 
-    # -----------------------------
-    # Header
-    # -----------------------------
     st.title(f"🏙️ City–State Comparison – {city}")
     st.caption(f"Locality-level analysis vs **{state}** benchmark")
 
-    # -----------------------------
-    # KPI Section
-    # -----------------------------
     st.subheader("📌 Key Comparison Metrics")
 
     c1, c2, c3 = st.columns(3)
@@ -197,13 +190,10 @@ def show_city_view():
     c2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
     c3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
 
-    # -----------------------------
-    # Selected Questions
-    # -----------------------------
-st.subheader("🎯 Selected Analysis Insights")
+    # ✅ FIXED block (proper indentation)
+    st.subheader("🎯 Selected Analysis Insights")
 
-    # ✅ put loop INSIDE function
-for q in questions:
+    for q in questions:
 
         if "priced higher" in q:
             if city_avg > state_avg:
@@ -232,31 +222,23 @@ for q in questions:
         else:
             st.info("Detailed analysis for this question will be enhanced in next iteration.")
 
-    # ✅ continue your code AFTER loop
-st.subheader("📊 Locality‑Level Price Analysis")
+    # ✅ Correct alignment continues
+    st.subheader("📊 Locality‑Level Price Analysis")
 
-locality_avg = (
+    locality_avg = (
         df.groupby("locality")["price_numeric"]
         .mean()
         .sort_values(ascending=False)
     )
 
-st.bar_chart(locality_avg)
+    st.bar_chart(locality_avg)
+    st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
 
-st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
+    st.subheader("📋 Locality Data")
+    st.dataframe(df, use_container_width=True)
 
-    # -----------------------------
-    # Data Table
-    # -----------------------------
-st.subheader("📋 Locality Data")
-st.dataframe(df, use_container_width=True)
-
-    # -----------------------------
-    # Navigation
-    # -----------------------------
-if st.button("← Back to State"):
-    st.session_state.view = "STATE"
-
+    if st.button("← Back to State"):
+        st.session_state.view = "STATE"
 # -------------------------------------------------
 # APP CONTROLLER
 # -------------------------------------------------
