@@ -253,8 +253,8 @@ st.dataframe(df, use_container_width=True)
     # -----------------------------
     # Navigation
     # -----------------------------
-    if st.button("← Back to State"):
-        st.session_state.view = "STATE"
+if st.button("← Back to State"):
+st.session_state.view = "STATE"
 
 # -------------------------------------------------
 # APP CONTROLLER
