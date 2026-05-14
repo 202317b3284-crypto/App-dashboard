@@ -200,36 +200,36 @@ def show_city_view():
     # -----------------------------
     # Selected Questions
     # -----------------------------
-    st.subheader("🎯 Selected Analysis Insights")
+st.subheader("🎯 Selected Analysis Insights")
 
-for q in questions:
+    for q in questions:
 
-    if "priced higher" in q:
-        if city_avg > state_avg:
-            st.success(f"The city is priced higher than the state by ₹{int(city_avg - state_avg):,} per sqft.")
+        if "priced higher" in q:
+            if city_avg > state_avg:
+                st.success(f"The city is priced higher than the state by ₹{int(city_avg - state_avg):,} per sqft.")
+            else:
+                st.info("The city is priced lower than the state average.")
+
+        elif "affordable" in q:
+            if city_avg < state_avg:
+                st.success("The city is more affordable compared to the state.")
+            else:
+                st.warning("The city is less affordable due to higher prices.")
+
+        elif "growing" in q:
+            growth_ratio = city_avg / state_avg if state_avg else 0
+            st.info(f"The city shows a growth ratio of {round(growth_ratio, 2)}× compared to the state.")
+
+        elif "localities outperform" in q:
+            outperform = df[df["price_numeric"] > state_avg]["locality"].unique()
+            st.success(f"Outperforming localities: {', '.join(outperform[:5])}")
+
+        elif "premium" in q:
+            market_type = "Premium" if city_avg > state_avg else "Affordable"
+            st.info(f"The city is a **{market_type} housing market**.")
+
         else:
-            st.info("The city is priced lower than the state average.")
-
-    elif "affordable" in q:
-        if city_avg < state_avg:
-            st.success("The city is more affordable compared to the state.")
-        else:
-            st.warning("The city is less affordable due to higher prices.")
-
-    elif "growing" in q:
-        growth_ratio = city_avg / state_avg if state_avg else 0
-        st.info(f"The city shows a growth ratio of {round(growth_ratio, 2)}× compared to the state.")
-
-    elif "localities outperform" in q:
-        outperform = df[df["price_numeric"] > state_avg]["locality"].unique()
-        st.success(f"Outperforming localities: {', '.join(outperform[:5])}")
-
-    elif "premium" in q:
-        market_type = "Premium" if city_avg > state_avg else "Affordable"
-        st.info(f"The city is a **{market_type} housing market**.")
-
-    else:
-        st.info("Detailed analysis for this question will be enhanced in next iteration.")
+            st.info("Detailed analysis for this question will be enhanced in next iteration.")
     # -----------------------------
     # Core Analysis (locality driven)
     # -----------------------------
