@@ -233,7 +233,7 @@ for q in questions:
     # -----------------------------
     # Core Analysis (locality driven)
     # -----------------------------
-    st.subheader("📊 Locality‑Level Price Analysis")
+st.subheader("📊 Locality‑Level Price Analysis")
 
     locality_avg = (
         df.groupby("locality")["price_numeric"]
