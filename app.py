@@ -241,8 +241,8 @@ locality_avg = (
         .sort_values(ascending=False)
     )
 
-    st.bar_chart(locality_avg)
-    st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
+st.bar_chart(locality_avg)
+st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
 
     # -----------------------------
     # Data Table
