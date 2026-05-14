@@ -151,12 +151,17 @@ def show_state_view():
         sorted(state_city_df["city"].unique())
     )
 
-   if st.button("← Back to India"):
-    st.session_state.view = "INDIA"
-    st.session_state.selected_state = None
+   col1, col2 = st.columns(2)
 
-if st.button("Proceed to City Comparison →"):
-    st.session_state.view = "CITY"
+with col1:
+    if st.button("← Back to India"):
+        st.session_state.view = "INDIA"
+        st.session_state.selected_state = None
+
+with col2:
+    if st.button("Proceed to City Comparison →"):
+        st.session_state.view = "CITY"
+
 # -------------------------------------------------
 # PAGE 3 → CITY VIEW (FIXED & FINAL)
 # -------------------------------------------------
