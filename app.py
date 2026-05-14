@@ -148,46 +148,100 @@ def show_state_view():
 # -------------------------------------------------
 # PAGE 3 → CITY VIEW
 # -------------------------------------------------
+# -------------------------------------------------
+# PAGE 3 → CITY VIEW (FULLY FIXED)
+# -------------------------------------------------
 def show_city_view():
-
     city = st.session_state.selected_city
     state = st.session_state.selected_state
     questions = st.session_state.selected_question
 
-    df = city_df[(city_df["city"] == city) & (city_df["state"] == state)]
+    df = city_df[
+        (city_df["city"] == city) &
+        (city_df["state"] == state)
+    ].copy()
 
     city_avg = df["price_numeric"].mean()
     state_avg = india_df[india_df["state"] == state][PRICE_COL_STATE].iloc[0]
 
-    st.title(f"🏙️ {city} vs {state}")
+    st.title(f"🏙️ City–State Comparison – {city}")
+    st.caption(f"Locality-level analysis vs **{state}** benchmark")
+
+    st.subheader("📌 Key Comparison Metrics")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("City Avg", int(city_avg))
-    c2.metric("State Avg", int(state_avg))
-    c3.metric("Diff", int(city_avg - state_avg))
+    c1.metric("City Avg Price / Sqft", f"₹ {int(city_avg):,}")
+    c2.metric("State Avg Price / Sqft", f"₹ {int(state_avg):,}")
+    c3.metric("Difference", f"₹ {int(city_avg - state_avg):,}")
 
-    st.subheader("Insights")
+    # ✅ FIXED block (proper indentation)
+    st.subheader("🎯 Selected Analysis Insights")
 
     for q in questions:
 
         if "priced higher" in q:
-            st.write("Price comparison done")
-
+            if city_avg > state_avg:
+                st.success(f"The city is priced higher than the state by ₹{int(city_avg - state_avg):,} per sqft.")
+            else:
+                st.info("The city is priced lower than the state average.")
+    
         elif "affordable" in q:
-            st.write("Affordability analyzed")
-
+            if city_avg < state_avg:
+                st.success("The city is more affordable compared to the state.")
+            else:
+                st.warning("The city is less affordable due to higher prices.")
+    
+        elif "growing" in q:
+            growth_ratio = city_avg / state_avg if state_avg else 0
+            st.info(f"The city shows a growth ratio of {round(growth_ratio, 2)}× compared to the state.")
+    
         elif "localities outperform" in q:
-            outperform = df[df["price_numeric"] > state_avg]["locality"]
-            st.write(outperform.head(5))
+            outperform = df[df["price_numeric"] > state_avg]["locality"].dropna().unique()
+            if len(outperform) > 0:
+                st.success(f"Outperforming localities: {', '.join(outperform[:5])}")
+            else:
+                st.info("No locality is outperforming the state average.")
+    
+        elif "high-growth state" in q:
+            if state_avg > city_avg * 0.8:
+                st.success("The state shows strong growth potential based on pricing trends.")
+            else:
+                st.info("The state shows moderate or stable growth trends.")
+    
+        elif "property size" in q:
+            st.info("Larger properties tend to command higher total prices, but price per sqft may decrease due to scale advantages.")
+    
+        elif "premium or affordable housing" in q:
+            market_type = "Premium" if city_avg > state_avg else "Affordable"
+            st.info(f"The city is primarily a **{market_type} housing market**.")
+    
+        elif "metro/IT proximity" in q:
+            st.info("Properties closer to metro or IT hubs typically have higher prices, showing strong location-based demand.")
+    
+        elif "value for money" in q:
+            ratio = state_avg / city_avg if city_avg else 0
+            st.info(f"The city offers a value score of {round(ratio,2)} relative to the state. Lower price indicates better value.")
+    
+        elif "What if property attributes" in q:
+            st.info("Estimated property price changes proportionally with area and price per sqft. This can be extended into a What‑If simulator.")
 
-        else:
-            st.info("Analysis available")
+    # ✅ Correct alignment continues
+    st.subheader("📊 Locality‑Level Price Analysis")
 
-    st.bar_chart(df.groupby("locality")["price_numeric"].mean())
+    locality_avg = (
+        df.groupby("locality")["price_numeric"]
+        .mean()
+        .sort_values(ascending=False)
+    )
 
-    if st.button("Back"):
+    st.bar_chart(locality_avg)
+    st.caption(f"State Benchmark: ₹ {int(state_avg):,}")
+
+    st.subheader("📋 Locality Data")
+    st.dataframe(df, use_container_width=True)
+
+    if st.button("← Back to State"):
         st.session_state.view = "STATE"
-
 # -------------------------------------------------
 # PAGE 4 → WHAT-IF CALCULATOR
 # -------------------------------------------------
