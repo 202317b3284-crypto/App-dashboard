@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import re
+import plotly.graph_objects as go
+
 
 st.set_page_config(page_title="Real Estate Market Analyzer", layout="wide")
 
@@ -242,8 +244,9 @@ def show_city_view():
 
     if st.button("← Back to State"):
         st.session_state.view = "STATE"
+
 # -------------------------------------------------
-# PAGE 4 → WHAT-IF CALCULATOR
+# PAGE 4 → WHAT-IF CALCULATOR (UPDATED ONLY)
 # -------------------------------------------------
 def show_whatif_view():
 
@@ -258,38 +261,95 @@ def show_whatif_view():
             st.session_state.view = "INDIA"
         return
 
+    # ✅ FIXED operators
     df = city_df[(city_df["city"] == city) & (city_df["state"] == state)]
 
     base_price = df["price_numeric"].mean()
 
-    area = st.slider("Area", 500, 5000, 1500)
+    # -----------------------------
+    # INPUT CONTROLS
+    # -----------------------------
+    area = st.slider("Area (sqft)", 500, 5000, 1500)
     beds = st.slider("Bedrooms", 1, 5, 3)
     baths = st.slider("Bathrooms", 1, 4, 2)
-    age = st.slider("Age", 0, 30, 10)
+    age = st.slider("Property Age (Years)", 0, 30, 10)
 
+    # -----------------------------
+    # CALCULATION
+    # -----------------------------
     price = base_price + beds*300 + baths*200 - age*100
     estimated = price * area
 
-    st.success(f"Estimated Price: ₹ {int(estimated):,}")
+    # -----------------------------
+    # ✅ NEW: GAUGE VISUALIZATION
+    # -----------------------------
+    st.subheader("💰 Estimated Property Value")
 
+    max_price = max(df["price_numeric"].max() * area, estimated * 1.5)
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=estimated,
+        number={'prefix': "₹", 'valueformat': ",.0f"},
+        title={'text': "Predicted Price"},
+        gauge={
+            'axis': {'range': [0, max_price]},
+            'bar': {'color': "#3b82f6"},
+            'steps': [
+                {'range': [0, max_price * 0.3], 'color': "#1f2937"},
+                {'range': [max_price * 0.3, max_price * 0.6], 'color': "#374151"},
+                {'range': [max_price * 0.6, max_price], 'color': "#4b5563"}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'value': estimated
+            }
+        }
+    ))
+
+    fig.update_layout(height=350)
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ✅ Optional text fallback
+    st.info(f"Estimated Price: ₹ {int(estimated):,}")
+
+    # -----------------------------
+    # MATCHING LOCALITIES
+    # -----------------------------
     matches = df[
         (df["price_numeric"] * area >= estimated * 0.8) &
         (df["price_numeric"] * area <= estimated * 1.2)
     ]
 
-    st.subheader("Matching Localities")
-    st.dataframe(matches)
+    st.subheader("📍 Matching Localities")
+    st.dataframe(matches, use_container_width=True)
 
-    # ✅ DOWNLOAD
+    # -----------------------------
+    # ✅ DOWNLOAD FEATURE
+    # -----------------------------
     csv = matches.to_csv(index=False).encode("utf-8")
 
     st.download_button(
-        "Download Data",
+        "⬇️ Download Matching Localities",
         csv,
         "localities.csv",
         "text/csv"
     )
 
+    # -----------------------------
+    # ✅ BONUS: Budget Check
+    # -----------------------------
+    st.subheader("💡 Budget Check")
+    budget = st.slider("Your Budget", 500000, 50000000, 10000000)
+
+    if estimated > budget:
+        st.error("⚠️ Price exceeds your budget")
+    else:
+        st.success("✅ Within your budget")
+
+    # -----------------------------
+    # NAVIGATION
+    # -----------------------------
     if st.button("← Back"):
         st.session_state.view = "INDIA"
 
